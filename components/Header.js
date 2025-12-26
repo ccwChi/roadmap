@@ -14,8 +14,12 @@ import {
   Loader2,
   Moon,
   Sun,
+<<<<<<< HEAD
   AlertCircle,
   WifiOff
+=======
+  AlertCircle
+>>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
@@ -31,8 +35,11 @@ export default function Header() {
     isSyncing,
     lastSyncTime,
     syncError,
+<<<<<<< HEAD
     isOffline,
     pendingSyncCount,
+=======
+>>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
     loadFromCloud,
     currentRoadmapId,
   } = useStore();
@@ -138,6 +145,7 @@ export default function Header() {
                     <Loader2 className="w-3 h-3 text-primary animate-spin" />
                     <span className="text-muted-foreground hidden sm:inline">同步中...</span>
                   </>
+<<<<<<< HEAD
                 ) : isOffline ? (
                   <>
                     <WifiOff className="w-3 h-3 text-orange-500" />
@@ -145,6 +153,8 @@ export default function Header() {
                       離線{pendingSyncCount > 0 ? ` (${pendingSyncCount})` : ''}
                     </span>
                   </>
+=======
+>>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
                 ) : syncError ? (
                   <>
                     <AlertCircle className="w-3 h-3 text-red-500" />

@@ -107,9 +107,13 @@ export const useStore = create(
       // ===== 雲端同步 =====
       lastSyncTime: null,
       isSyncing: false,
+<<<<<<< HEAD
       syncError: null,
       isOffline: false,
       pendingSyncCount: 0,
+=======
+      syncError: null, // 新增：同步錯誤狀態
+>>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
 
       // 設定網路狀態
       setOfflineStatus: (isOffline) => set({ isOffline }),
@@ -124,6 +128,7 @@ export const useStore = create(
             const { isSignedIn, progress, notes, settings, isOffline } = get();
             if (!isSignedIn) return;
 
+<<<<<<< HEAD
             const syncData = {
               progress,
               notes,
@@ -164,6 +169,25 @@ export const useStore = create(
               set({ isSyncing: false });
             }
           }, 500);
+=======
+            set({ isSyncing: true, syncError: null });
+            try {
+              const { saveData } = await import('@/lib/googleDrive');
+              await saveData({
+                progress,
+                notes,
+                settings,
+                updatedAt: new Date().toISOString(),
+              });
+              set({ lastSyncTime: new Date().toISOString(), syncError: null });
+            } catch (error) {
+              console.error('同步失敗:', error);
+              set({ syncError: error.message || '同步失敗，請稍後再試' });
+            } finally {
+              set({ isSyncing: false });
+            }
+          }, 500); // 縮短為 500ms 防抖動，減少資料丟失風險
+>>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
         };
       })(),
 
