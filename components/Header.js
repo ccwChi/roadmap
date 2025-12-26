@@ -15,11 +15,16 @@ import {
   Moon,
   Sun,
 <<<<<<< HEAD
+<<<<<<< HEAD
   AlertCircle,
   WifiOff
 =======
   AlertCircle
 >>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
+=======
+  AlertCircle,
+  WifiOff
+>>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
@@ -36,10 +41,15 @@ export default function Header() {
     lastSyncTime,
     syncError,
 <<<<<<< HEAD
+<<<<<<< HEAD
     isOffline,
     pendingSyncCount,
 =======
 >>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
+=======
+    isOffline,
+    pendingSyncCount,
+>>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
     loadFromCloud,
     currentRoadmapId,
   } = useStore();
@@ -146,6 +156,9 @@ export default function Header() {
                     <span className="text-muted-foreground hidden sm:inline">同步中...</span>
                   </>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
                 ) : isOffline ? (
                   <>
                     <WifiOff className="w-3 h-3 text-orange-500" />
@@ -153,8 +166,11 @@ export default function Header() {
                       離線{pendingSyncCount > 0 ? ` (${pendingSyncCount})` : ''}
                     </span>
                   </>
+<<<<<<< HEAD
 =======
 >>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
+=======
+>>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
                 ) : syncError ? (
                   <>
                     <AlertCircle className="w-3 h-3 text-red-500" />
