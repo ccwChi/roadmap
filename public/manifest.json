@@ -2,25 +2,33 @@
   "name": "AI Roadmap - 學習路線圖",
   "short_name": "AI Roadmap",
   "description": "互動式 AI 學習路線圖，支援進度追蹤、筆記功能與 Google Drive 同步",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0a0a0a",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./icons/icon-192x192.svg",
+      "src": "/icons/icon-192x192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "maskable any"
     },
     {
-      "src": "./icons/icon-512x512.svg",
+      "src": "/icons/icon-512x512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable any"
     }
   ],
-  "categories": ["education", "productivity"]
+  "categories": ["education", "productivity"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
