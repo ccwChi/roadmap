@@ -107,19 +107,9 @@ export const useStore = create(
       // ===== 雲端同步 =====
       lastSyncTime: null,
       isSyncing: false,
-<<<<<<< HEAD
-<<<<<<< HEAD
       syncError: null,
       isOffline: false,
       pendingSyncCount: 0,
-=======
-      syncError: null, // 新增：同步錯誤狀態
->>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
-=======
-      syncError: null,
-      isOffline: false,
-      pendingSyncCount: 0,
->>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
 
       // 設定網路狀態
       setOfflineStatus: (isOffline) => set({ isOffline }),
@@ -134,10 +124,6 @@ export const useStore = create(
             const { isSignedIn, progress, notes, settings, isOffline } = get();
             if (!isSignedIn) return;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
             const syncData = {
               progress,
               notes,
@@ -158,7 +144,6 @@ export const useStore = create(
               return;
             }
 
-<<<<<<< HEAD
             set({ isSyncing: true, syncError: null });
             try {
               const { saveData } = await import('@/lib/googleDrive');
@@ -179,34 +164,6 @@ export const useStore = create(
               set({ isSyncing: false });
             }
           }, 500);
-=======
-=======
->>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
-            set({ isSyncing: true, syncError: null });
-            try {
-              const { saveData } = await import('@/lib/googleDrive');
-              await saveData(syncData);
-              set({ lastSyncTime: new Date().toISOString(), syncError: null, pendingSyncCount: 0 });
-            } catch (error) {
-              console.error('同步失敗:', error);
-              // 同步失敗時，嘗試加入離線佇列
-              try {
-                const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
-                await queueSync(syncData);
-                const count = await getPendingCount();
-                set({ pendingSyncCount: count, syncError: '同步失敗，已加入離線佇列' });
-              } catch (queueError) {
-                set({ syncError: error.message || '同步失敗，請稍後再試' });
-              }
-            } finally {
-              set({ isSyncing: false });
-            }
-<<<<<<< HEAD
-          }, 500); // 縮短為 500ms 防抖動，減少資料丟失風險
->>>>>>> 90b2806 (fix: 修復 Google Drive 同步顯示已同步但實際未同步的問題)
-=======
-          }, 500);
->>>>>>> 89b3388 (feat: 實作完整 PWA 離線同步支援)
         };
       })(),
 
