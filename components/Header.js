@@ -13,7 +13,8 @@ import {
   Settings,
   Loader2,
   Moon,
-  Sun
+  Sun,
+  AlertCircle
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
@@ -27,6 +28,7 @@ export default function Header() {
     setUser,
     isSyncing,
     lastSyncTime,
+    syncError,
     loadFromCloud,
     currentRoadmapId,
   } = useStore();
@@ -123,11 +125,16 @@ export default function Header() {
           {/* Right */}
           <div className="flex items-center gap-2">
             {isSignedIn && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-xs">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-xs" title={syncError || ''}>
                 {isSyncing ? (
                   <>
                     <Loader2 className="w-3 h-3 text-primary animate-spin" />
                     <span className="text-muted-foreground hidden sm:inline">同步中...</span>
+                  </>
+                ) : syncError ? (
+                  <>
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                    <span className="text-red-500 hidden sm:inline">同步失敗</span>
                   </>
                 ) : lastSyncTime ? (
                   <>

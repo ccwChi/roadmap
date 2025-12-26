@@ -107,6 +107,7 @@ export const useStore = create(
       // ===== 雲端同步 =====
       lastSyncTime: null,
       isSyncing: false,
+      syncError: null, // 新增：同步錯誤狀態
 
       // 同步到雲端 (防抖動)
       syncToCloud: (() => {
@@ -117,7 +118,7 @@ export const useStore = create(
             const { isSignedIn, progress, notes, settings } = get();
             if (!isSignedIn) return;
 
-            set({ isSyncing: true });
+            set({ isSyncing: true, syncError: null });
             try {
               const { saveData } = await import('@/lib/googleDrive');
               await saveData({
@@ -126,13 +127,14 @@ export const useStore = create(
                 settings,
                 updatedAt: new Date().toISOString(),
               });
-              set({ lastSyncTime: new Date().toISOString() });
+              set({ lastSyncTime: new Date().toISOString(), syncError: null });
             } catch (error) {
               console.error('同步失敗:', error);
+              set({ syncError: error.message || '同步失敗，請稍後再試' });
             } finally {
               set({ isSyncing: false });
             }
-          }, 2000); // 2秒防抖動
+          }, 500); // 縮短為 500ms 防抖動，減少資料丟失風險
         };
       })(),
 
