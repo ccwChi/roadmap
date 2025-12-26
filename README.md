@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+部署到 GitHub Pages
+步驟 1：合併 PR 到 main 分支
+先將目前的修改合併到 main 分支（建立 PR 或直接合併）。
 
-## Getting Started
+步驟 2：設定 GitHub Repository
+到你的 GitHub Repo → Settings → Pages：
 
-First, run the development server:
+Source: 選擇 GitHub Actions
+不需要選擇分支，workflow 會自動處理
+步驟 3：設定 Secrets（Google Drive 同步用）
+到 Settings → Secrets and variables → Actions → New repository secret：
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Secret 名稱	值
+GOOGLE_CLIENT_ID	你的 Google OAuth Client ID
+GOOGLE_API_KEY	你的 Google API Key
+如果不需要 Google Drive 同步，可以跳過這步。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+步驟 4：觸發部署
+部署會在以下情況自動執行：
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+推送到 main 分支時
+手動觸發（到 Actions → Deploy to GitHub Pages → Run workflow）
+部署後的網址
+https://ccwChi.github.io/roadmap/
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+本地測試 Production Build
+# 模擬 GitHub Pages 環境
+GITHUB_PAGES=true npm run build
 
-## Learn More
+# 本地預覽（需要安裝 serve）
+npx serve out
 
-To learn more about Next.js, take a look at the following resources:
+重要設定說明
+你的 next.config.mjs 已經正確設定：
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const repoName = '/roadmap';
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+// 部署到 GitHub Pages 時會自動設定 basePath
+basePath: isGitHubPages ? repoName : '',
+assetPrefix: isGitHubPages ? repoName : '',
 
-## Deploy on Vercel
+這確保所有資源路徑在 username.github.io/roadmap/ 下正確運作。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+PWA 在 GitHub Pages 上的注意事項
+HTTPS - GitHub Pages 自動提供 HTTPS，PWA 需要 HTTPS 才能運作
+Service Worker - 會在 build 時自動生成到 /out 目錄
+manifest.json - 已設定正確的路徑
