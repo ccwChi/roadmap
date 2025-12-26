@@ -14,11 +14,13 @@ import {
   Loader2,
   Moon,
   Sun,
-  AlertCircle
+  AlertCircle,
+  WifiOff
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
 import ProgressBar from './ProgressBar';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
 
 export default function Header() {
   const { toggleSidebar, setSettingsOpen } = useUIStore();
@@ -29,9 +31,14 @@ export default function Header() {
     isSyncing,
     lastSyncTime,
     syncError,
+    isOffline,
+    pendingSyncCount,
     loadFromCloud,
     currentRoadmapId,
   } = useStore();
+
+  // 初始化離線同步
+  useOfflineSync();
 
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -131,6 +138,13 @@ export default function Header() {
                     <Loader2 className="w-3 h-3 text-primary animate-spin" />
                     <span className="text-muted-foreground hidden sm:inline">同步中...</span>
                   </>
+                ) : isOffline ? (
+                  <>
+                    <WifiOff className="w-3 h-3 text-orange-500" />
+                    <span className="text-orange-500 hidden sm:inline">
+                      離線{pendingSyncCount > 0 ? ` (${pendingSyncCount})` : ''}
+                    </span>
+                  </>
                 ) : syncError ? (
                   <>
                     <AlertCircle className="w-3 h-3 text-red-500" />
@@ -144,7 +158,7 @@ export default function Header() {
                 ) : (
                   <>
                     <CloudOff className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-muted-foreground hidden sm:inline">離線</span>
+                    <span className="text-muted-foreground hidden sm:inline">未同步</span>
                   </>
                 )}
               </div>

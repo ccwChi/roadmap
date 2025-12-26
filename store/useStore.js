@@ -107,36 +107,87 @@ export const useStore = create(
       // ===== 雲端同步 =====
       lastSyncTime: null,
       isSyncing: false,
-      syncError: null, // 新增：同步錯誤狀態
+      syncError: null,
+      isOffline: false,
+      pendingSyncCount: 0,
 
-      // 同步到雲端 (防抖動)
+      // 設定網路狀態
+      setOfflineStatus: (isOffline) => set({ isOffline }),
+      setPendingSyncCount: (count) => set({ pendingSyncCount: count }),
+
+      // 同步到雲端 (防抖動 + 離線支援)
       syncToCloud: (() => {
         let timeout = null;
         return () => {
           if (timeout) clearTimeout(timeout);
           timeout = setTimeout(async () => {
-            const { isSignedIn, progress, notes, settings } = get();
+            const { isSignedIn, progress, notes, settings, isOffline } = get();
             if (!isSignedIn) return;
+
+            const syncData = {
+              progress,
+              notes,
+              settings,
+              updatedAt: new Date().toISOString(),
+            };
+
+            // 離線時，將資料加入 Background Sync 佇列
+            if (isOffline || !navigator.onLine) {
+              try {
+                const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
+                await queueSync(syncData);
+                const count = await getPendingCount();
+                set({ pendingSyncCount: count, syncError: '離線中，將在恢復連線後同步' });
+              } catch (error) {
+                console.error('加入離線佇列失敗:', error);
+              }
+              return;
+            }
 
             set({ isSyncing: true, syncError: null });
             try {
               const { saveData } = await import('@/lib/googleDrive');
-              await saveData({
-                progress,
-                notes,
-                settings,
-                updatedAt: new Date().toISOString(),
-              });
-              set({ lastSyncTime: new Date().toISOString(), syncError: null });
+              await saveData(syncData);
+              set({ lastSyncTime: new Date().toISOString(), syncError: null, pendingSyncCount: 0 });
             } catch (error) {
               console.error('同步失敗:', error);
-              set({ syncError: error.message || '同步失敗，請稍後再試' });
+              // 同步失敗時，嘗試加入離線佇列
+              try {
+                const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
+                await queueSync(syncData);
+                const count = await getPendingCount();
+                set({ pendingSyncCount: count, syncError: '同步失敗，已加入離線佇列' });
+              } catch (queueError) {
+                set({ syncError: error.message || '同步失敗，請稍後再試' });
+              }
             } finally {
               set({ isSyncing: false });
             }
-          }, 500); // 縮短為 500ms 防抖動，減少資料丟失風險
+          }, 500);
         };
       })(),
+
+      // 處理離線佇列同步請求
+      handleOfflineSync: async (data) => {
+        const { isSignedIn } = get();
+        if (!isSignedIn || !navigator.onLine) return;
+
+        set({ isSyncing: true, syncError: null });
+        try {
+          const { saveData } = await import('@/lib/googleDrive');
+          await saveData(data);
+          set({
+            lastSyncTime: new Date().toISOString(),
+            syncError: null,
+            pendingSyncCount: 0,
+          });
+        } catch (error) {
+          console.error('離線同步失敗:', error);
+          set({ syncError: error.message || '離線同步失敗' });
+        } finally {
+          set({ isSyncing: false });
+        }
+      },
 
       // 從雲端載入
       loadFromCloud: async () => {
