@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import {
-  Sparkles,
   Menu,
   User,
   LogIn,
@@ -21,6 +20,13 @@ import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
 import ProgressBar from './ProgressBar';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Header() {
   const { toggleSidebar, setSettingsOpen } = useUIStore();
@@ -98,12 +104,21 @@ export default function Header() {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
+  // 同步狀態 icon
+  const SyncStatusIcon = () => {
+    if (isSyncing) return <Loader2 className="w-3 h-3 text-primary animate-spin" />;
+    if (isOffline) return <WifiOff className="w-3 h-3 text-orange-500" />;
+    if (syncError) return <AlertCircle className="w-3 h-3 text-red-500" />;
+    if (lastSyncTime) return <Cloud className="w-3 h-3 text-green-500" />;
+    return <CloudOff className="w-3 h-3 text-muted-foreground" />;
+  };
+
   return (
     <header className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-background via-background/95 to-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
-          {/* Left */}
-          <div className="flex items-center gap-3">
+          {/* Left - Menu + Progress */}
+          <div className="flex items-center gap-3 flex-1">
             <button
               onClick={toggleSidebar}
               className="p-2 rounded-lg hover:bg-secondary transition-colors"
@@ -112,104 +127,60 @@ export default function Header() {
               <Menu className="w-5 h-5 text-foreground" />
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex-1 max-w-xs">
+              <div className="text-sm font-medium text-foreground mb-1">
+                {currentRoadmap?.icon} {currentRoadmap?.title || 'AI Roadmap'}
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-foreground">
-                  {currentRoadmap?.icon} {currentRoadmap?.title || 'AI Roadmap'}
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  {currentRoadmap?.description}
-                </p>
-              </div>
+              <ProgressBar compact />
             </div>
           </div>
 
-          {/* Center */}
-          <div className="hidden md:block flex-1 max-w-md mx-4">
-            <ProgressBar />
-          </div>
-
-          {/* Right */}
+          {/* Right - Login or User Menu */}
           <div className="flex items-center gap-2">
-            {isSignedIn && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-xs" title={syncError || ''}>
-                {isSyncing ? (
-                  <>
-                    <Loader2 className="w-3 h-3 text-primary animate-spin" />
-                    <span className="text-muted-foreground hidden sm:inline">同步中...</span>
-                  </>
-                ) : isOffline ? (
-                  <>
-                    <WifiOff className="w-3 h-3 text-orange-500" />
-                    <span className="text-orange-500 hidden sm:inline">
-                      離線{pendingSyncCount > 0 ? ` (${pendingSyncCount})` : ''}
-                    </span>
-                  </>
-                ) : syncError ? (
-                  <>
-                    <AlertCircle className="w-3 h-3 text-red-500" />
-                    <span className="text-red-500 hidden sm:inline">同步失敗</span>
-                  </>
-                ) : lastSyncTime ? (
-                  <>
-                    <Cloud className="w-3 h-3 text-green-500" />
-                    <span className="text-muted-foreground hidden sm:inline">已同步</span>
-                  </>
-                ) : (
-                  <>
-                    <CloudOff className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-muted-foreground hidden sm:inline">未同步</span>
-                  </>
-                )}
-              </div>
-            )}
-
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors"
-              aria-label="切換主題"
-            >
-              {mounted && (
-                resolvedTheme === 'dark' ? (
-                  <Sun className="w-5 h-5 text-foreground" />
-                ) : (
-                  <Moon className="w-5 h-5 text-foreground" />
-                )
-              )}
-            </button>
-
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors"
-              aria-label="設定"
-            >
-              <Settings className="w-5 h-5 text-foreground" />
-            </button>
-
             {isSignedIn ? (
-              <div className="flex items-center gap-2">
-                {user?.picture ? (
-                  <img
-                    src={user.picture}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full border-2 border-border"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                )}
-                <button
-                  onClick={handleSignOut}
-                  className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                  aria-label="登出"
-                >
-                  <LogOut className="w-4 h-4 text-foreground" />
-                </button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-secondary transition-colors">
+                    {user?.picture ? (
+                      <img
+                        src={user.picture}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full border-2 border-border"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <SyncStatusIcon />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {user?.name && (
+                    <>
+                      <div className="px-2 py-1.5 text-sm font-medium">{user.name}</div>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={toggleTheme}>
+                    {mounted && resolvedTheme === 'dark' ? (
+                      <Sun className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Moon className="w-4 h-4 mr-2" />
+                    )}
+                    {mounted && resolvedTheme === 'dark' ? '淺色模式' : '深色模式'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    設定
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    登出
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <button
                 onClick={handleSignIn}
@@ -227,10 +198,6 @@ export default function Header() {
               </button>
             )}
           </div>
-        </div>
-
-        <div className="md:hidden mt-3">
-          <ProgressBar />
         </div>
       </div>
     </header>

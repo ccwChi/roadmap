@@ -11,6 +11,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTheme } from 'next-themes';
+import { Lock, Unlock, Download } from 'lucide-react';
 
 import CustomNode from './CustomNode';
 import NodeDetailModal from './NodeDetailModal';
@@ -26,6 +27,7 @@ export default function RoadmapFlow() {
   const { selectedNode, setSelectedNode } = useUIStore();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isLocked, setIsLocked] = useState(true); // 預設鎖定
 
   useEffect(() => {
     setMounted(true);
@@ -48,6 +50,28 @@ export default function RoadmapFlow() {
     setSelectedNode(null);
   }, [setSelectedNode]);
 
+  // 匯出節點座標
+  const exportPositions = useCallback(() => {
+    const positions = nodes.map(node => ({
+      id: node.id,
+      position: node.position,
+    }));
+
+    const jsonStr = JSON.stringify(positions, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentRoadmapId}-positions.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // 同時複製到剪貼簿
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      alert('座標已匯出並複製到剪貼簿！');
+    });
+  }, [nodes, currentRoadmapId]);
+
   // 主題相關顏色
   const isDark = mounted ? resolvedTheme === 'dark' : true;
   const themeColors = {
@@ -64,10 +88,11 @@ export default function RoadmapFlow() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={isLocked ? undefined : onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
+          nodesDraggable={!isLocked}
           fitView
           minZoom={0.3}
           maxZoom={2}
@@ -96,6 +121,34 @@ export default function RoadmapFlow() {
             maskColor={themeColors.minimapMask}
           />
         </ReactFlow>
+
+        {/* 編輯工具列 */}
+        <div className="absolute bottom-6 right-6 z-10 flex gap-2">
+          <button
+            onClick={() => setIsLocked(!isLocked)}
+            className={`p-3 rounded-lg border shadow-lg transition-colors ${
+              isLocked
+                ? 'bg-card border-border hover:bg-secondary'
+                : 'bg-orange-500/20 border-orange-500 text-orange-500'
+            }`}
+            title={isLocked ? '解鎖編輯' : '鎖定編輯'}
+          >
+            {isLocked ? (
+              <Lock className="w-5 h-5" />
+            ) : (
+              <Unlock className="w-5 h-5" />
+            )}
+          </button>
+          {!isLocked && (
+            <button
+              onClick={exportPositions}
+              className="p-3 rounded-lg bg-blue-500/20 border border-blue-500 text-blue-500 shadow-lg hover:bg-blue-500/30 transition-colors"
+              title="匯出座標"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {selectedNode && (

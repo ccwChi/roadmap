@@ -3,13 +3,29 @@
 import { useStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
 
-export default function ProgressBar() {
+export default function ProgressBar({ compact = false }) {
   const currentRoadmapId = useStore((state) => state.currentRoadmapId);
   const getProgress = useStore((state) => state.getProgress);
 
   const roadmap = getRoadmap(currentRoadmapId);
   const totalNodes = roadmap?.nodes?.length || 0;
   const { completed, percentage } = getProgress(currentRoadmapId, totalNodes);
+
+  if (compact) {
+    return (
+      <div className="w-full flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {completed}/{totalNodes}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

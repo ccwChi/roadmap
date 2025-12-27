@@ -1,14 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import SettingsPanel from '@/components/SettingsPanel';
 import MusicPlayerPlaceholder from '@/components/MusicPlayerPlaceholder';
-import { Home, Moon, Sun } from 'lucide-react';
 
 const RoadmapFlow = dynamic(() => import('@/components/RoadmapFlow'), {
   ssr: false,
@@ -23,13 +19,6 @@ const RoadmapFlow = dynamic(() => import('@/components/RoadmapFlow'), {
 });
 
 export default function RoadmapPage() {
-  const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <main className="relative w-full h-screen overflow-hidden bg-background">
       <Header />
@@ -37,17 +26,6 @@ export default function RoadmapPage() {
       <SettingsPanel />
       <RoadmapFlow />
       <MusicPlayerPlaceholder />
-
-      {/* Fixed buttons */}
-      <div className="fixed top-20 left-6 z-10 flex flex-col gap-2">
-        <Link
-          href="/"
-          className="p-3 rounded-full bg-card border border-border shadow-lg hover:bg-secondary transition-colors"
-          aria-label="返回首頁"
-        >
-          <Home className="w-5 h-5 text-foreground" />
-        </Link>
-      </div>
 
       {/* Legend */}
       <div className="absolute bottom-6 left-6 z-10 bg-card/90 backdrop-blur-md border border-border rounded-lg p-4 shadow-xl hidden lg:block">
