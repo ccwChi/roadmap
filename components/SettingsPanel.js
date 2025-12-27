@@ -1,10 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Trash2, Download, Upload, Cloud, RefreshCw, LogIn, LogOut } from 'lucide-react';
+import { Trash2, Download, Upload, Cloud, RefreshCw, LogIn, LogOut } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   loadGoogleScripts,
   signIn,
@@ -52,18 +59,15 @@ export default function SettingsPanel() {
     }
   }, [settingsOpen, isGoogleReady]);
 
-  // 登入後載入雲端資料（延遲一下確保 token 設定完成）
+  // 登入後載入雲端資料
   useEffect(() => {
     if (isSignedIn && isGoogleReady) {
-      // 延遲 500ms 確保 token 已經設定到 gapi.client
       const timer = setTimeout(() => {
         loadFromCloud();
       }, 500);
       return () => clearTimeout(timer);
     }
   }, [isSignedIn, isGoogleReady, loadFromCloud]);
-
-  if (!settingsOpen) return null;
 
   const handleGoogleLogin = async () => {
     if (!isGoogleReady) return;
@@ -127,24 +131,13 @@ export default function SettingsPanel() {
   };
 
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-        onClick={() => setSettingsOpen(false)}
-      />
+    <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+      <SheetContent side="right" className="w-96 max-w-full overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>設定</SheetTitle>
+        </SheetHeader>
 
-      <div className="fixed inset-y-0 right-0 w-96 max-w-full bg-card border-l border-border z-50 shadow-2xl overflow-y-auto">
-        <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">設定</h2>
-          <button
-            onClick={() => setSettingsOpen(false)}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <X className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-
-        <div className="p-4 space-y-6">
+        <div className="mt-6 space-y-6">
           {/* Account */}
           <section>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">帳戶</h3>
@@ -192,7 +185,7 @@ export default function SettingsPanel() {
                     </Button>
                   ) : (
                     <p className="text-xs text-destructive text-center">
-                      尚未設定 Google API 金鑰，請參考下方說明
+                      尚未設定 Google API 金鑰
                     </p>
                   )}
                 </CardContent>
@@ -214,25 +207,21 @@ export default function SettingsPanel() {
                     </p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.autoSync}
-                    onChange={(e) => updateSettings({ autoSync: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-foreground after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
+                <Switch
+                  checked={settings.autoSync}
+                  onCheckedChange={(checked) => updateSettings({ autoSync: checked })}
+                />
               </div>
 
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => isSignedIn && loadFromCloud()}
                 disabled={!isSignedIn || isSyncing}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-secondary hover:bg-secondary/80 disabled:opacity-50 text-foreground rounded-lg transition-colors"
+                className="w-full"
               >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
                 {isSyncing ? '同步中...' : '立即同步'}
-              </button>
+              </Button>
             </div>
           </section>
 
@@ -240,31 +229,35 @@ export default function SettingsPanel() {
           <section>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">資料管理</h3>
             <div className="space-y-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={handleExportData}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors"
+                className="w-full"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4 mr-2" />
                 匯出資料
-              </button>
+              </Button>
 
-              <label className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors cursor-pointer">
-                <Upload className="w-4 h-4" />
-                匯入資料
-                <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
-              </label>
+              <Button variant="secondary" asChild className="w-full">
+                <label className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" />
+                  匯入資料
+                  <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
+                </label>
+              </Button>
 
-              <button
+              <Button
+                variant="destructive"
                 onClick={handleReset}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded-lg transition-colors"
+                className="w-full"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 mr-2" />
                 清除所有資料
-              </button>
+              </Button>
             </div>
           </section>
         </div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }

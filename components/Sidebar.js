@@ -1,8 +1,14 @@
 'use client';
 
-import { X, Map, ChevronRight } from 'lucide-react';
+import { Map, ChevronRight } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmapList, getRoadmap } from '@/data/roadmaps';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
@@ -15,30 +21,17 @@ export default function Sidebar() {
     setSidebarOpen(false);
   };
 
-  if (!sidebarOpen) return null;
-
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
-        onClick={() => setSidebarOpen(false)}
-      />
-
-      <div className="fixed inset-y-0 left-0 w-80 max-w-full bg-card border-r border-border z-40 shadow-2xl overflow-y-auto">
-        <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <SheetContent side="left" className="w-80 max-w-full overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Map className="w-5 h-5 text-primary" />
             學習路線圖
-          </h2>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <X className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="p-4 space-y-2">
+        <div className="mt-6 space-y-2">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
             選擇路線圖
           </p>
@@ -101,7 +94,7 @@ export default function Sidebar() {
             </p>
           </div>
         </div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
