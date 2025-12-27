@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import SettingsPanel from '@/components/SettingsPanel';
-import MusicPlayerPlaceholder from '@/components/MusicPlayerPlaceholder';
+import MusicPlayer from '@/components/MusicPlayer';
 import { Home, Moon, Sun } from 'lucide-react';
 
 const RoadmapFlow = dynamic(() => import('@/components/RoadmapFlow'), {
@@ -36,7 +36,7 @@ export default function RoadmapPage() {
       <Sidebar />
       <SettingsPanel />
       <RoadmapFlow />
-      <MusicPlayerPlaceholder />
+      <MusicPlayer />
 
       {/* Fixed buttons */}
       <div className="fixed top-20 left-6 z-10 flex flex-col gap-2">
