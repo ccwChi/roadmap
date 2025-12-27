@@ -104,6 +104,16 @@ self.addEventListener('message', async (event) => {
       }
       break;
 
+    case 'GET_PENDING_DATA':
+      // 取得所有待同步資料
+      try {
+        const pendingData = await getPendingSyncs();
+        event.ports[0]?.postMessage({ data: pendingData });
+      } catch (error) {
+        event.ports[0]?.postMessage({ data: [] });
+      }
+      break;
+
     case 'FORCE_SYNC':
       // 強制執行同步
       try {
