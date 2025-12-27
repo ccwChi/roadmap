@@ -16,7 +16,7 @@ export default function ProgressBar({ compact = false }) {
       <div className="w-full flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -37,7 +37,7 @@ export default function ProgressBar({ compact = false }) {
       </div>
       <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
           style={{ width: `${percentage}%` }}
         />
       </div>

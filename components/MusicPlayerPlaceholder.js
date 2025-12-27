@@ -25,7 +25,7 @@ export default function MusicPlayerPlaceholder() {
           <div className="fixed bottom-20 right-6 z-50 w-80 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h3 className="text-foreground font-semibold flex items-center gap-2">
-                <Music className="w-5 h-5 text-purple-500" />
+                <Music className="w-5 h-5 text-cyan-500" />
                 音樂播放器
               </h3>
               <button

@@ -344,7 +344,7 @@ export default function MusicPlayer() {
             {/* 標題列 */}
             <div className="p-3 border-b border-border flex items-center justify-between">
               <h3 className="text-foreground font-semibold flex items-center gap-2">
-                <Music className="w-5 h-5 text-purple-500" />
+                <Music className="w-5 h-5 text-cyan-500" />
                 音樂播放器
               </h3>
               <div className="flex items-center gap-1">
@@ -411,7 +411,7 @@ export default function MusicPlayer() {
                   {currentTrack ? (
                     <div className="text-center mb-3">
                       <div className="w-16 h-16 bg-secondary rounded-lg mx-auto mb-2 flex items-center justify-center">
-                        <Music className="w-8 h-8 text-purple-500" />
+                        <Music className="w-8 h-8 text-cyan-500" />
                       </div>
                       <h4 className="text-foreground font-medium truncate">
                         {currentTrack.title || currentTrack.name}
@@ -644,7 +644,7 @@ export default function MusicPlayer() {
                         key={file.id}
                         className="px-3 py-2 flex items-center gap-2 hover:bg-secondary"
                       >
-                        <Music className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                        <Music className="w-4 h-4 text-cyan-500 flex-shrink-0" />
                         <span className="flex-1 text-sm text-foreground truncate">{file.name}</span>
                         <button
                           onClick={() => handleAddToPlaylist(file)}

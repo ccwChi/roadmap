@@ -35,7 +35,7 @@ export default function HomePage() {
       </button>
 
       {/* Logo */}
-      <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-8">
+      <div className="p-4 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl mb-8">
         <Sparkles className="w-12 h-12 text-white" />
       </div>
 
