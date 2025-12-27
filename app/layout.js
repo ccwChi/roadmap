@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 export const metadata = {
   title: "AI Roadmap - 學習路線圖",
   description: "互動式 AI 學習路線圖，支援進度追蹤、筆記功能與 Google Drive 同步",
-  manifest: "/manifest.json",
+  manifest: "manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
