@@ -52,10 +52,14 @@ export default function SettingsPanel() {
     }
   }, [settingsOpen, isGoogleReady]);
 
-  // 登入後載入雲端資料
+  // 登入後載入雲端資料（延遲一下確保 token 設定完成）
   useEffect(() => {
     if (isSignedIn && isGoogleReady) {
-      loadFromCloud();
+      // 延遲 500ms 確保 token 已經設定到 gapi.client
+      const timer = setTimeout(() => {
+        loadFromCloud();
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [isSignedIn, isGoogleReady, loadFromCloud]);
 

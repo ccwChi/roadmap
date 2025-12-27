@@ -151,7 +151,7 @@ export const useStore = create(
 
             set({ isSyncing: true, syncError: null });
             try {
-              const { saveData, isGoogleConfigured } = await import('@/lib/googleDrive');
+              const { saveData, isGoogleConfigured, waitForGoogleApiReady } = await import('@/lib/googleDrive');
 
               // 檢查 Google API 是否已配置
               if (!isGoogleConfigured()) {
@@ -160,8 +160,10 @@ export const useStore = create(
                 return;
               }
 
-              // 檢查 gapi 是否可用
-              if (typeof window === 'undefined' || !window.gapi?.client?.getToken()) {
+              // 等待 Google API 就緒（最多等 5 秒）
+              try {
+                await waitForGoogleApiReady(5000);
+              } catch {
                 console.warn('[Sync] Google API 未就緒，將資料加入離線佇列');
                 const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
                 await queueSync(syncData);
@@ -215,10 +217,19 @@ export const useStore = create(
 
         set({ isSyncing: true, syncError: null });
         try {
-          const { saveData, isGoogleConfigured } = await import('@/lib/googleDrive');
+          const { saveData, isGoogleConfigured, waitForGoogleApiReady } = await import('@/lib/googleDrive');
 
-          // 檢查 Google API 是否已配置和就緒
-          if (!isGoogleConfigured() || !window.gapi?.client?.getToken()) {
+          // 檢查 Google API 是否已配置
+          if (!isGoogleConfigured()) {
+            console.warn('[OfflineSync] Google API 未配置，保持資料在佇列中');
+            set({ isSyncing: false });
+            return;
+          }
+
+          // 等待 Google API 就緒（最多等 5 秒）
+          try {
+            await waitForGoogleApiReady(5000);
+          } catch {
             console.warn('[OfflineSync] Google API 未就緒，保持資料在佇列中');
             set({ isSyncing: false });
             return;
@@ -277,7 +288,7 @@ export const useStore = create(
 
         set({ isSyncing: true, syncError: null });
         try {
-          const { loadData, isGoogleConfigured } = await import('@/lib/googleDrive');
+          const { loadData, isGoogleConfigured, waitForGoogleApiReady } = await import('@/lib/googleDrive');
 
           // 檢查 Google API 是否已配置
           if (!isGoogleConfigured()) {
@@ -286,10 +297,12 @@ export const useStore = create(
             return { success: false, reason: 'Google API 未配置' };
           }
 
-          // 檢查 gapi 是否可用
-          if (typeof window === 'undefined' || !window.gapi?.client?.getToken()) {
+          // 等待 Google API 就緒（最多等 10 秒）
+          try {
+            await waitForGoogleApiReady(10000);
+          } catch {
             console.warn('[LoadFromCloud] Google API 未就緒');
-            set({ isSyncing: false });
+            set({ isSyncing: false, syncError: 'Google API 尚未就緒，請稍後再試' });
             return { success: false, reason: 'Google API 未就緒' };
           }
 

@@ -73,7 +73,10 @@ export default function Header() {
       const { signIn } = await import('@/lib/googleDrive');
       const userInfo = await signIn();
       setUser(userInfo);
-      await loadFromCloud();
+      // 延遲載入雲端資料，確保 token 已設定
+      setTimeout(() => {
+        loadFromCloud();
+      }, 500);
     } catch (error) {
       console.error('登入失敗:', error);
     } finally {
