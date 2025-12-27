@@ -45,7 +45,7 @@ export default function HomePage() {
 
       {/* Main Link */}
       <Link
-        href="/roadmap"
+        href="/roadmap-ai_agent"
         className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-lg"
       >
         進入學習地圖
