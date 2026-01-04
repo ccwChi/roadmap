@@ -81,10 +81,50 @@ export const useCardStore = create(
             setViewMode: (mode) => set({ viewMode: mode }),
 
             // ===== 顯示設定 =====
+            // ===== 顯示設定 =====
             showHiddenLinks: false,           // 是否顯示隱藏連線
             toggleHiddenLinks: () => set(state => ({
                 showHiddenLinks: !state.showHiddenLinks
             })),
+
+            // ===== 同步狀態 =====
+            isSyncing: false,
+            isLoading: false, // 從雲端載入資料中
+            lastModified: null, // 本地最後修改時間
+            lastSyncedCloudTime: null, // 上次同步時的雲端時間戳（用於檢測其他裝置的變更）
+            syncConflict: null, // 同步衝突資訊（用於背景同步時檢測到衝突）
+
+            // ===== 髒檢查 (Dirty Checking) =====
+            unsavedChanges: {
+                metadata: false,
+                contents: new Set() // Set<cardId>
+            },
+
+            markMetadataDirty: () => set(state => ({
+                unsavedChanges: { ...state.unsavedChanges, metadata: true },
+                lastModified: new Date().toISOString()
+            })),
+
+            markContentDirty: (cardId) => set(state => {
+                const newContents = new Set(state.unsavedChanges.contents);
+                newContents.add(cardId);
+                return {
+                    unsavedChanges: { ...state.unsavedChanges, contents: newContents },
+                    lastModified: new Date().toISOString()
+                };
+            }),
+
+            clearDirtyFlags: (syncedMetadata, syncedContentIds) => set(state => {
+                const newContents = new Set(state.unsavedChanges.contents);
+                syncedContentIds.forEach(id => newContents.delete(id));
+
+                return {
+                    unsavedChanges: {
+                        metadata: syncedMetadata ? false : state.unsavedChanges.metadata,
+                        contents: newContents
+                    }
+                };
+            }),
 
             // ===== CRUD 操作 =====
 
@@ -105,7 +145,7 @@ export const useCardStore = create(
                     cards: { ...state.cards, [id]: newCard }
                 }));
 
-                // 觸發雲端同步
+                get().markMetadataDirty();
                 get().syncToCloud();
 
                 return id;
@@ -132,6 +172,7 @@ export const useCardStore = create(
                     }
                 }));
 
+                get().markMetadataDirty();
                 get().syncToCloud();
             },
 
@@ -156,6 +197,8 @@ export const useCardStore = create(
                     };
                 });
 
+                get().markMetadataDirty();
+                get().syncToCloud();
             },
 
             // 重置所有資料 (開發/測試用)
@@ -252,6 +295,9 @@ export const useCardStore = create(
                     }
                 }));
 
+                get().markContentDirty(cardId);
+                get().syncToCloud();
+
                 // 儲存到 localStorage
                 try {
                     localStorage.setItem(`card-content-${cardId}`, content);
@@ -292,90 +338,170 @@ export const useCardStore = create(
                 });
             },
 
-            // ===== 雲端同步 =====
+            // ===== 雲端同步 (使用 Dirty Checking) =====
             syncToCloud: (() => {
                 let timeout = null;
                 return () => {
                     if (timeout) clearTimeout(timeout);
                     timeout = setTimeout(async () => {
-                        console.log('[CardSync] === 開始卡片同步 ===');
+                        const { unsavedChanges, cards, cardContents } = get();
+                        const metadataDirty = unsavedChanges.metadata;
+                        const contentDirtyIds = Array.from(unsavedChanges.contents);
 
-                        // 檢查是否已登入 Google
+                        if (!metadataDirty && contentDirtyIds.length === 0) {
+                            return; // 無需同步
+                        }
+
+                        console.log('[CardSync] === 開始差異同步 ===');
+                        console.log('[CardSync] 待同步項目:', {
+                            metadata: metadataDirty,
+                            contents: contentDirtyIds.length
+                        });
+
+                        // 檢查登入狀態
                         try {
                             const { useStore } = await import('@/store/useStore');
                             const isSignedIn = useStore.getState().isSignedIn;
-
-                            console.log('[CardSync] 1. 登入狀態:', isSignedIn);
                             if (!isSignedIn) {
-                                console.log('[CardSync] ❌ 未登入，跳過雲端同步');
+                                console.log('[CardSync] ❌ 未登入，跳過同步');
                                 return;
                             }
-                        } catch (error) {
-                            console.log('[CardSync] ❌ 無法檢查登入狀態，跳過同步');
+                        } catch (e) {
+                            console.log('[CardSync] ❌ 檢查登入狀態失敗');
                             return;
                         }
 
-                        const { cards, cardContents } = get();
-                        console.log('[CardSync] 2. 準備同步:', {
-                            卡片數量: Object.keys(cards).length,
-                            內容數量: Object.keys(cardContents).length
-                        });
+                        set({ isSyncing: true });
 
                         try {
                             // 等待 Google API 就緒
                             const { waitForGoogleApiReady } = await import('@/lib/googleDrive');
                             await waitForGoogleApiReady(5000);
 
-                            const { saveCardsMetadata, saveCardContent } = await import('@/lib/googleDriveCards');
+                            const { saveCardsMetadata, saveCardContent, loadCardsMetadata } = await import('@/lib/googleDriveCards');
 
-                            // 1. 同步元資料
-                            console.log('[CardSync] 3. 同步元資料...');
-                            const metadataSuccess = await saveCardsMetadata(cards);
+                            // 🔍 衝突檢測：檢查雲端是否被其他裝置修改過
+                            const { lastModified: cloudLastModified, cards: cloudCards } = await loadCardsMetadata();
+                            const lastSyncedCloudTime = get().lastSyncedCloudTime;
 
-                            if (!metadataSuccess) {
-                                throw new Error('元資料同步失敗');
+                            // 比較雲端當前時間 vs 上次同步時的雲端時間
+                            if (cloudLastModified && lastSyncedCloudTime) {
+                                const cloudTime = new Date(cloudLastModified).getTime();
+                                const lastSyncedTime = new Date(lastSyncedCloudTime).getTime();
+
+                                // 如果雲端時間戳改變了，表示有其他裝置修改過
+                                if (cloudTime !== lastSyncedTime) {
+                                    console.warn('[CardSync] ⚠️ 偵測到其他裝置已修改雲端資料，停止同步');
+                                    set({
+                                        isSyncing: false,
+                                        syncConflict: {
+                                            cloudData: {
+                                                cards: cloudCards,
+                                                cardContents: {}, // 暫時不載入內容
+                                                lastModified: cloudLastModified
+                                            },
+                                            localLastModified: get().lastModified
+                                        }
+                                    });
+                                    return;
+                                }
                             }
-                            console.log('[CardSync] ✅ 元資料同步成功');
 
-                            // 2. 同步已載入的內容
-                            console.log('[CardSync] 4. 同步內容...');
-                            const contentResults = await Promise.allSettled(
-                                Object.entries(cardContents).map(([cardId, content]) =>
-                                    saveCardContent(cardId, content)
-                                )
-                            );
+                            let metadataSynced = false;
+                            const contentSyncedIds = [];
 
-                            const failedCount = contentResults.filter(r => r.status === 'rejected' || !r.value).length;
-
-                            if (failedCount > 0) {
-                                console.warn(`[CardSync] ⚠️ ${failedCount} 個內容同步失敗`);
-                            } else {
-                                console.log('[CardSync] ✅ 所有內容同步成功');
+                            // 1. 同步 metadata
+                            if (metadataDirty) {
+                                console.log('[CardSync] 同步元資料...');
+                                const success = await saveCardsMetadata(cards);
+                                if (success) {
+                                    metadataSynced = true;
+                                    console.log('[CardSync] ✅ 元資料同步成功');
+                                } else {
+                                    console.error('[CardSync] ❌ 元資料同步失敗');
+                                }
                             }
 
-                            console.log('[CardSync] 🎉 雲端同步流程完成');
+                            // 2. 同步 contents
+                            if (contentDirtyIds.length > 0) {
+                                console.log(`[CardSync] 同步 ${contentDirtyIds.length} 個內容案...`);
+
+                                const results = await Promise.allSettled(
+                                    contentDirtyIds.map(async (cardId) => {
+                                        const content = cardContents[cardId];
+                                        if (content === undefined) return false;
+
+                                        const success = await saveCardContent(cardId, content);
+                                        if (success) return cardId;
+                                        throw new Error('Save failed');
+                                    })
+                                );
+
+                                results.forEach((result) => {
+                                    if (result.status === 'fulfilled' && result.value) {
+                                        contentSyncedIds.push(result.value);
+                                    }
+                                });
+
+                                console.log(`[CardSync] ✅ ${contentSyncedIds.length}/${contentDirtyIds.length} 個內容同步成功`);
+                            }
+
+                            // 3. 清除 Dirty Flags
+                            get().clearDirtyFlags(metadataSynced, contentSyncedIds);
+
+                            // 4. 更新上次同步的雲端時間戳（使用當前時間，因為我們剛上傳）
+                            if (metadataSynced || contentSyncedIds.length > 0) {
+                                set({ lastSyncedCloudTime: new Date().toISOString() });
+                            }
+
+                            console.log('[CardSync] 🎉 差異同步完成');
                         } catch (error) {
-                            console.error('[CardSync] ❌ 雲端同步失敗:', error.message || error);
+                            console.error('[CardSync] ❌ 同步失敗:', error.message || error);
                         } finally {
-                            console.log('[CardSync] === 卡片同步結束 ===\n');
+                            set({ isSyncing: false });
+                            console.log('[CardSync] === 同步結束 ===\n');
                         }
-                    }, 2000); // 增加 debounce 時間，避免頻繁觸發
+                    }, 2000);
                 };
             })(),
 
             // 從雲端載入所有資料
             loadFromCloud: async () => {
+                set({ isLoading: true });
                 try {
                     const { fullLoad } = await import('@/lib/googleDriveCards');
-                    const { cards, cardContents } = await fullLoad();
+                    const { cards, cardContents, lastModified: cloudLastModified } = await fullLoad();
 
+                    const { unsavedChanges, lastModified: localLastModified } = get();
+                    const hasUnsavedChanges = unsavedChanges.metadata || unsavedChanges.contents.size > 0;
+
+                    // 衝突檢測：只要本地有未儲存變更，就需要詢問使用者
+                    if (hasUnsavedChanges) {
+                        // 情況1: 雲端有資料，本地也有未儲存變更
+                        if (Object.keys(cards).length > 0) {
+                            set({ isLoading: false });
+                            return {
+                                conflict: true,
+                                cloudData: { cards, cardContents, lastModified: cloudLastModified },
+                                localLastModified: localLastModified || new Date().toISOString()
+                            };
+                        }
+
+                        // 情況2: 雲端無資料，但本地有新建的卡片
+                        // 這種情況下，應該直接上傳，不需要詢問
+                        console.log('[CardStore] 雲端無資料，本地有變更，將在下次同步時上傳');
+                    }
+
+                    // 無衝突，直接載入
                     if (Object.keys(cards).length > 0) {
-                        // 驗證並修復載入的資料
                         const validatedCards = validateCards(cards);
 
                         set({
                             cards: validatedCards,
-                            cardContents: cardContents || {}
+                            cardContents: cardContents || {},
+                            lastModified: cloudLastModified,
+                            lastSyncedCloudTime: cloudLastModified, // 記錄雲端時間戳
+                            isLoading: false
                         });
 
                         // 同時儲存到 localStorage
@@ -386,13 +512,69 @@ export const useCardStore = create(
                         });
 
                         console.log('[CardStore] 雲端資料已載入:', Object.keys(validatedCards).length, '張卡片');
-                        return true;
+                        return { success: true };
                     }
 
                     console.log('[CardStore] 雲端無資料');
-                    return false;
+                    set({ isLoading: false });
+                    return { success: false };
                 } catch (error) {
                     console.log('[CardStore] 載入雲端資料失敗:', error.message || error);
+                    set({ isLoading: false });
+                    return { success: false, error: error.message };
+                }
+            },
+
+            // 強制從雲端載入（解決衝突時使用）
+            forceLoadFromCloud: async (cloudData) => {
+                try {
+                    const { cards, cardContents, lastModified } = cloudData;
+                    const validatedCards = validateCards(cards);
+
+                    set({
+                        cards: validatedCards,
+                        cardContents: cardContents || {},
+                        lastModified,
+                        lastSyncedCloudTime: lastModified, // 記錄雲端時間戳
+                        unsavedChanges: { metadata: false, contents: new Set() }
+                    });
+
+                    Object.entries(cardContents || {}).forEach(([cardId, content]) => {
+                        if (content !== undefined) {
+                            localStorage.setItem(`card-content-${cardId}`, content);
+                        }
+                    });
+
+                    console.log('[CardStore] 已從雲端強制載入');
+                    return true;
+                } catch (error) {
+                    console.error('[CardStore] 強制載入失敗:', error);
+                    return false;
+                }
+            },
+
+            // 強制同步到雲端（解決衝突時使用）
+            forceUploadToCloud: async () => {
+                try {
+                    // 直接觸發同步，忽略 debounce
+                    const { cards, cardContents } = get();
+                    const { saveCardsMetadata, saveCardContent } = await import('@/lib/googleDriveCards');
+
+                    await saveCardsMetadata(cards);
+
+                    const contentIds = Object.keys(cardContents);
+                    await Promise.all(
+                        contentIds.map(cardId => saveCardContent(cardId, cardContents[cardId]))
+                    );
+
+                    set({
+                        unsavedChanges: { metadata: false, contents: new Set() }
+                    });
+
+                    console.log('[CardStore] 已強制上傳到雲端');
+                    return true;
+                } catch (error) {
+                    console.error('[CardStore] 強制上傳失敗:', error);
                     return false;
                 }
             },
@@ -489,7 +671,23 @@ export const useCardStore = create(
                 // 只持久化卡片元資料，不持久化完整內容
                 cards: state.cards,
                 viewMode: state.viewMode,
-                showHiddenLinks: state.showHiddenLinks
+                showHiddenLinks: state.showHiddenLinks,
+                // 持久化同步狀態，確保重新整理後仍能檢測衝突
+                lastModified: state.lastModified,
+                lastSyncedCloudTime: state.lastSyncedCloudTime,
+                unsavedChanges: {
+                    metadata: state.unsavedChanges.metadata,
+                    contents: Array.from(state.unsavedChanges.contents) // Set 轉 Array
+                }
+            }),
+            // 反序列化時將 Array 轉回 Set
+            merge: (persistedState, currentState) => ({
+                ...currentState,
+                ...persistedState,
+                unsavedChanges: {
+                    metadata: persistedState.unsavedChanges?.metadata || false,
+                    contents: new Set(persistedState.unsavedChanges?.contents || [])
+                }
             })
         }
     )

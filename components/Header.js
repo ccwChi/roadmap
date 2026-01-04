@@ -27,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCardStore } from '@/store/useCardStore';
+import SyncConflictDialog from './SyncConflictDialog';
 
 export default function Header() {
   const { toggleSidebar, setSettingsOpen } = useUIStore();
@@ -43,6 +45,8 @@ export default function Header() {
     currentRoadmapId,
   } = useStore();
 
+  const { isSyncing: isCardSyncing } = useCardStore();
+
   // 初始化離線同步
   useOfflineSync();
 
@@ -50,6 +54,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [syncConflict, setSyncConflict] = useState(null);
 
   const currentRoadmap = getRoadmap(currentRoadmapId);
 
@@ -84,7 +89,13 @@ export default function Header() {
 
       // 確保真的有 Token 才載入
       if (window.gapi?.client?.getToken()) {
-        await loadFromCloud();
+        const { loadFromCloud } = useCardStore.getState();
+        const result = await loadFromCloud();
+
+        // 檢查是否有衝突
+        if (result?.conflict) {
+          setSyncConflict(result);
+        }
       } else {
         throw new Error('登入後無法取得 Token');
       }
@@ -109,9 +120,23 @@ export default function Header() {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
+  const handleDownloadFromCloud = async () => {
+    if (!syncConflict) return;
+    const { forceLoadFromCloud } = useCardStore.getState();
+    await forceLoadFromCloud(syncConflict.cloudData);
+    setSyncConflict(null);
+  };
+
+  const handleUploadToCloud = async () => {
+    if (!syncConflict) return;
+    const { forceUploadToCloud } = useCardStore.getState();
+    await forceUploadToCloud();
+    setSyncConflict(null);
+  };
+
   // 同步狀態 icon
   const SyncStatusIcon = () => {
-    if (isSyncing) return <Loader2 className="w-3 h-3 text-primary animate-spin" />;
+    if (isSyncing || isCardSyncing) return <Loader2 className="w-3 h-3 text-primary animate-spin" />;
     if (isOffline) return <WifiOff className="w-3 h-3 text-orange-500" />;
     if (syncError) return <AlertCircle className="w-3 h-3 text-red-500" />;
     if (lastSyncTime) return <Cloud className="w-3 h-3 text-green-500" />;
@@ -205,6 +230,16 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* 同步衝突對話框 */}
+      <SyncConflictDialog
+        open={!!syncConflict}
+        onOpenChange={(open) => !open && setSyncConflict(null)}
+        cloudLastModified={syncConflict?.cloudData?.lastModified}
+        localLastModified={syncConflict?.localLastModified}
+        onDownloadFromCloud={handleDownloadFromCloud}
+        onUploadToCloud={handleUploadToCloud}
+      />
     </header>
   );
 }

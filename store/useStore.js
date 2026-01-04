@@ -377,7 +377,9 @@ export const useStore = create(
         currentRoadmapId: state.currentRoadmapId,
         progress: state.progress,
         notes: state.notes,
-        // 如果有其他需要持久化的設定，加在這裡
+        // 恢復使用者狀態持久化，配合 LocalStorage Token 機制
+        isSignedIn: state.isSignedIn,
+        user: state.user,
       }),
       // 序列化是部分狀態，不需要自定義 serialize (除非 Set/Map 需要)
       // 但上面原本有用 serialize/deserialize 處理 Set ? 不，progress 內部是 Array (line 33)
