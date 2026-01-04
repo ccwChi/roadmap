@@ -14,7 +14,10 @@ import {
   Moon,
   Sun,
   AlertCircle,
-  WifiOff
+  WifiOff,
+  Download,
+  Upload,
+  Trash2
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
@@ -120,18 +123,142 @@ export default function Header() {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
+  // 下載雲端資料（可從衝突對話框或 dropdown 呼叫）
   const handleDownloadFromCloud = async () => {
-    if (!syncConflict) return;
-    const { forceLoadFromCloud } = useCardStore.getState();
-    await forceLoadFromCloud(syncConflict.cloudData);
-    setSyncConflict(null);
+    try {
+      const { forceLoadFromCloud } = useCardStore.getState();
+      if (syncConflict) {
+        await forceLoadFromCloud(syncConflict.cloudData);
+        setSyncConflict(null);
+      } else {
+        // 從 dropdown 直接下載
+        const { loadFromCloud } = useCardStore.getState();
+        await loadFromCloud();
+      }
+    } catch (error) {
+      console.error('下載雲端資料失敗:', error);
+      alert('下載失敗：' + error.message);
+    }
   };
 
+  // 上傳到雲端（可從衝突對話框或 dropdown 呼叫）
   const handleUploadToCloud = async () => {
-    if (!syncConflict) return;
-    const { forceUploadToCloud } = useCardStore.getState();
-    await forceUploadToCloud();
-    setSyncConflict(null);
+    try {
+      const { forceUploadToCloud } = useCardStore.getState();
+      await forceUploadToCloud();
+      if (syncConflict) {
+        setSyncConflict(null);
+      }
+    } catch (error) {
+      console.error('上傳到雲端失敗:', error);
+      alert('上傳失敗：' + error.message);
+    }
+  };
+
+  // 匯出資料
+  const handleExportData = () => {
+    try {
+      const { cards, cardContents, projects, currentProjectId } = useCardStore.getState();
+      const exportData = {
+        cards,
+        cardContents,
+        projects,
+        currentProjectId,
+        exportedAt: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `knowledge-map-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('匯出資料失敗:', error);
+      alert('匯出失敗：' + error.message);
+    }
+  };
+
+  // 匯入資料
+  const handleImportData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+
+    input.onchange = async (e) => {
+      try {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const text = await file.text();
+        const importData = JSON.parse(text);
+
+        if (!importData.cards) {
+          throw new Error('無效的備份檔案格式');
+        }
+
+        if (confirm('匯入資料將覆蓋現有的本地資料，是否繼續？')) {
+          const { cards, cardContents, projects, currentProjectId } = importData;
+          useCardStore.setState({
+            cards: cards || {},
+            cardContents: cardContents || {},
+            projects: projects || { 'default': { id: 'default', name: '預設專案', icon: '📝' } },
+            currentProjectId: currentProjectId || 'default'
+          });
+
+          alert('資料匯入成功！');
+        }
+      } catch (error) {
+        console.error('匯入資料失敗:', error);
+        alert('匯入失敗：' + error.message);
+      }
+    };
+
+    input.click();
+  };
+
+  // 清除本地資料
+  const handleClearData = () => {
+    if (confirm('確定要清除所有本地資料嗎？此操作無法復原！\n\n建議先匯出備份。')) {
+      if (confirm('最後確認：真的要清除所有資料嗎？')) {
+        try {
+          // 清除 Zustand store
+          useCardStore.setState({
+            cards: {},
+            cardContents: {},
+            projects: {
+              'default': {
+                id: 'default',
+                name: '預設專案',
+                icon: '📝',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            },
+            currentProjectId: 'default',
+            unsavedChanges: { metadata: false, contents: new Set() }
+          });
+
+          // 清除 localStorage 中的卡片內容
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('card-content-')) {
+              localStorage.removeItem(key);
+            }
+          });
+
+          alert('本地資料已清除！');
+        } catch (error) {
+          console.error('清除資料失敗:', error);
+          alert('清除失敗：' + error.message);
+        }
+      }
+    }
   };
 
   // 同步狀態 icon
@@ -145,7 +272,7 @@ export default function Header() {
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-background via-background/70 to-transparent">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div className="mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Left - Menu + Progress */}
           <div className="flex items-center gap-3 flex-1">
@@ -185,26 +312,55 @@ export default function Header() {
                     <SyncStatusIcon />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-64">
+                  {/* 帳戶資訊 */}
                   {user?.name && (
                     <>
-                      <div className="px-2 py-1.5 text-sm font-medium">{user.name}</div>
+                      <div className="px-3 py-2">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        {user?.email && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
+                        )}
+                      </div>
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  <DropdownMenuItem onClick={toggleTheme}>
-                    {mounted && resolvedTheme === 'dark' ? (
-                      <Sun className="w-4 h-4 mr-2" />
-                    ) : (
-                      <Moon className="w-4 h-4 mr-2" />
-                    )}
-                    {mounted && resolvedTheme === 'dark' ? '淺色模式' : '深色模式'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    設定
-                  </DropdownMenuItem>
+
+                  {/* 雲端同步 */}
+                  <div className="px-2 py-1">
+                    <p className="text-xs font-medium text-muted-foreground px-2 py-1">雲端同步</p>
+                    <DropdownMenuItem onClick={handleUploadToCloud} disabled={isCardSyncing}>
+                      <Cloud className="w-4 h-4 mr-2" />
+                      上傳到雲端
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDownloadFromCloud} disabled={isCardSyncing}>
+                      <Cloud className="w-4 h-4 mr-2" />
+                      下載雲端資料
+                    </DropdownMenuItem>
+                  </div>
+
                   <DropdownMenuSeparator />
+
+                  {/* 資料管理 */}
+                  <div className="px-2 py-1">
+                    <p className="text-xs font-medium text-muted-foreground px-2 py-1">資料管理</p>
+                    <DropdownMenuItem onClick={handleExportData}>
+                      <Download className="w-4 h-4 mr-2" />
+                      匯出資料
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleImportData}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      匯入資料
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleClearData}
+                      className="text-red-500 focus:text-red-500"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      清除本地資料
+                    </DropdownMenuItem>
+                  </div>
+
                   <DropdownMenuItem onClick={handleSignOut} className="text-red-500 focus:text-red-500">
                     <LogOut className="w-4 h-4 mr-2" />
                     登出

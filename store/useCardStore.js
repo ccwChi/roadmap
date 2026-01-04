@@ -22,6 +22,7 @@ const validateCard = (card) => {
             z: card.position?.z ?? 0
         },
         links: Array.isArray(card.links) ? card.links : [],
+        projectId: card.projectId || 'default', // ✅ 確保每張卡片都有專案歸屬
         createdAt: card.createdAt || new Date().toISOString(),
         updatedAt: card.updatedAt || new Date().toISOString()
     };
@@ -70,8 +71,20 @@ function parseMarkdownLinks(markdown) {
 export const useCardStore = create(
     persist(
         (set, get) => ({
+            // ===== 專案管理 =====
+            projects: {
+                'default': {
+                    id: 'default',
+                    name: '預設專案',
+                    icon: '📝',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            },
+            currentProjectId: 'default', // 當前選中的專案
+
             // ===== 卡片資料 =====
-            cards: {},                        // { cardId: cardData }
+            cards: {},                        // { cardId: cardData } - 每張卡片都有 projectId
 
             // ===== 完整內容（不持久化，按需載入） =====
             cardContents: {},                 // { cardId: markdownContent }
@@ -80,7 +93,6 @@ export const useCardStore = create(
             viewMode: '2d',                   // '2d' | '3d'
             setViewMode: (mode) => set({ viewMode: mode }),
 
-            // ===== 顯示設定 =====
             // ===== 顯示設定 =====
             showHiddenLinks: false,           // 是否顯示隱藏連線
             toggleHiddenLinks: () => set(state => ({
@@ -92,7 +104,9 @@ export const useCardStore = create(
             isLoading: false, // 從雲端載入資料中
             lastModified: null, // 本地最後修改時間
             lastSyncedCloudTime: null, // 上次同步時的雲端時間戳（用於檢測其他裝置的變更）
-            syncConflict: null, // 同步衝突資訊（用於背景同步時檢測到衝突）
+            lastLocalSyncTime: null, // 上次本地同步的時間
+            syncConflict: null, // 同步衝突資訊
+            deviceId: null, // 唯一的裝置 ID (UUID)，用於識別修改來源
 
             // ===== 髒檢查 (Dirty Checking) =====
             unsavedChanges: {
@@ -126,14 +140,86 @@ export const useCardStore = create(
                 };
             }),
 
+            // ===== 專案管理操作 =====
+
+            // 新增專案
+            addProject: (projectData) => {
+                const id = `project-${Date.now()}`;
+                const newProject = {
+                    id,
+                    name: projectData.name || '新專案',
+                    icon: projectData.icon || '📁',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                set(state => ({
+                    projects: { ...state.projects, [id]: newProject },
+                    currentProjectId: id // 自動切換到新專案
+                }));
+
+                return id;
+            },
+
+            // 切換專案
+            switchProject: (projectId) => {
+                set({ currentProjectId: projectId });
+            },
+
+            // 更新專案資訊
+            updateProject: (projectId, updates) => {
+                set(state => ({
+                    projects: {
+                        ...state.projects,
+                        [projectId]: {
+                            ...state.projects[projectId],
+                            ...updates,
+                            updatedAt: new Date().toISOString()
+                        }
+                    }
+                }));
+            },
+
+            // 刪除專案（及其所有卡片）
+            deleteProject: (projectId) => {
+                if (projectId === 'default') {
+                    console.warn('無法刪除預設專案');
+                    return false;
+                }
+
+                set(state => {
+                    const newProjects = { ...state.projects };
+                    delete newProjects[projectId];
+
+                    // 刪除該專案的所有卡片
+                    const newCards = {};
+                    Object.entries(state.cards).forEach(([id, card]) => {
+                        if (card.projectId !== projectId) {
+                            newCards[id] = card;
+                        }
+                    });
+
+                    return {
+                        projects: newProjects,
+                        cards: newCards,
+                        currentProjectId: state.currentProjectId === projectId ? 'default' : state.currentProjectId
+                    };
+                });
+
+                return true;
+            },
+
             // ===== CRUD 操作 =====
 
             // 新增卡片
             addCard: (cardData) => {
                 const id = cardData?.id || generateCardId();
+                const { currentProjectId } = get();
+
                 const newCard = validateCard({
                     ...cardData,
                     id,
+                    projectId: cardData.projectId || currentProjectId, // 自動加入當前專案
                     links: [],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
@@ -381,16 +467,20 @@ export const useCardStore = create(
                             const { saveCardsMetadata, saveCardContent, loadCardsMetadata } = await import('@/lib/googleDriveCards');
 
                             // 🔍 衝突檢測：檢查雲端是否被其他裝置修改過
-                            const { lastModified: cloudLastModified, cards: cloudCards } = await loadCardsMetadata();
-                            const lastSyncedCloudTime = get().lastSyncedCloudTime;
+                            const {
+                                lastModified: cloudLastModified,
+                                cards: cloudCards,
+                                lastModifierDeviceId: cloudModifierId
+                            } = await loadCardsMetadata();
+                            const { lastSyncedCloudTime, deviceId } = get();
 
                             // 比較雲端當前時間 vs 上次同步時的雲端時間
                             if (cloudLastModified && lastSyncedCloudTime) {
                                 const cloudTime = new Date(cloudLastModified).getTime();
                                 const lastSyncedTime = new Date(lastSyncedCloudTime).getTime();
 
-                                // 如果雲端時間戳改變了，表示有其他裝置修改過
-                                if (cloudTime !== lastSyncedTime) {
+                                // 只有在「時間戳不同」且「不是我自己修改的」才視為衝突
+                                if (cloudTime !== lastSyncedTime && cloudModifierId !== deviceId) {
                                     console.warn('[CardSync] ⚠️ 偵測到其他裝置已修改雲端資料，停止同步');
                                     set({
                                         isSyncing: false,
@@ -404,6 +494,8 @@ export const useCardStore = create(
                                         }
                                     });
                                     return;
+                                } else if (cloudTime !== lastSyncedTime && cloudModifierId === deviceId) {
+                                    console.log('[CardSync] ℹ️ 雲端已被此裝置修改過（非衝突），繼續上傳');
                                 }
                             }
 
@@ -413,7 +505,7 @@ export const useCardStore = create(
                             // 1. 同步 metadata
                             if (metadataDirty) {
                                 console.log('[CardSync] 同步元資料...');
-                                const success = await saveCardsMetadata(cards);
+                                const success = await saveCardsMetadata(cards, get().deviceId);
                                 if (success) {
                                     metadataSynced = true;
                                     console.log('[CardSync] ✅ 元資料同步成功');
@@ -583,52 +675,63 @@ export const useCardStore = create(
 
             // 取得所有連線（用於 ReactFlow edges）
             getEdges: () => {
-                const { cards, showHiddenLinks } = get();
+                const { cards, showHiddenLinks, currentProjectId } = get();
                 const edges = [];
 
-                Object.values(cards).forEach(card => {
-                    card.links?.forEach((link, index) => {
-                        // 過濾隱藏連線
-                        if (link.isHidden && !showHiddenLinks) return;
+                // 只處理當前專案的卡片
+                Object.values(cards)
+                    .filter(card => (card.projectId || 'default') === currentProjectId)
+                    .forEach(card => {
+                        card.links?.forEach((link, index) => {
+                            // 過濾隱藏連線
+                            if (link.isHidden && !showHiddenLinks) return;
 
-                        edges.push({
-                            id: `${card.id}-${link.targetId}-${index}`,
-                            source: card.id,
-                            target: link.targetId,
-                            type: 'smoothstep',
-                            animated: true,
-                            label: link.label,
-                            style: {
-                                stroke: link.isHidden ? '#94a3b880' : '#94a3b8',
-                                strokeWidth: link.isHidden ? 1 : 2,
-                                strokeDasharray: link.isHidden ? '5,5' : '0'
-                            }
+                            // 確保目標卡片也在當前專案中
+                            const targetCard = cards[link.targetId];
+                            if (!targetCard || (targetCard.projectId || 'default') !== currentProjectId) return;
+
+                            edges.push({
+                                id: `${card.id}-${link.targetId}-${index}`,
+                                source: card.id,
+                                target: link.targetId,
+                                type: 'smoothstep',
+                                animated: true,
+                                label: link.label,
+                                style: {
+                                    stroke: link.isHidden ? '#94a3b880' : '#94a3b8',
+                                    strokeWidth: link.isHidden ? 1 : 2,
+                                    strokeDasharray: link.isHidden ? '5,5' : '0'
+                                }
+                            });
                         });
                     });
-                });
 
                 return edges;
             },
 
             // 取得所有節點（用於 ReactFlow nodes）
             getNodes: () => {
-                const { cards } = get();
-                return Object.values(cards).map(card => ({
-                    id: card.id,
-                    type: 'cardNode',
-                    data: {
-                        title: card.title,
-                        summary: card.summary,
-                        tags: card.tags,
-                        color: card.color,
-                        linkCount: card?.links?.length || 0
-                    },
-                    position: {
-                        x: card.position?.x || 0,
-                        y: card.position?.y || 0
-                        // z 座標在 2D 模式不使用
-                    }
-                }));
+                const { cards, currentProjectId } = get();
+
+                // 只返回當前專案的卡片（容錯：undefined 視為 'default'）
+                return Object.values(cards)
+                    .filter(card => (card.projectId || 'default') === currentProjectId)
+                    .map(card => ({
+                        id: card.id,
+                        type: 'cardNode',
+                        data: {
+                            title: card.title,
+                            summary: card.summary,
+                            tags: card.tags,
+                            color: card.color,
+                            linkCount: card?.links?.length || 0
+                        },
+                        position: {
+                            x: card.position?.x || 0,
+                            y: card.position?.y || 0
+                            // z 座標在 2D 模式不使用
+                        }
+                    }));
             },
 
             // 更新節點位置（拖曳後）
@@ -668,6 +771,9 @@ export const useCardStore = create(
         {
             name: 'card-storage',
             partialize: (state) => ({
+                // 專案管理
+                projects: state.projects,
+                currentProjectId: state.currentProjectId,
                 // 只持久化卡片元資料，不持久化完整內容
                 cards: state.cards,
                 viewMode: state.viewMode,
@@ -675,20 +781,39 @@ export const useCardStore = create(
                 // 持久化同步狀態，確保重新整理後仍能檢測衝突
                 lastModified: state.lastModified,
                 lastSyncedCloudTime: state.lastSyncedCloudTime,
+                deviceId: state.deviceId, // 持久化 deviceId
                 unsavedChanges: {
                     metadata: state.unsavedChanges.metadata,
                     contents: Array.from(state.unsavedChanges.contents) // Set 轉 Array
                 }
             }),
-            // 反序列化時將 Array 轉回 Set
-            merge: (persistedState, currentState) => ({
-                ...currentState,
-                ...persistedState,
-                unsavedChanges: {
-                    metadata: persistedState.unsavedChanges?.metadata || false,
-                    contents: new Set(persistedState.unsavedChanges?.contents || [])
+            // 反序列化時將 Array 轉回 Set，並遷移舊卡片
+            merge: (persistedState, currentState) => {
+                // 遷移：確保所有卡片都有 projectId
+                const migratedCards = {};
+                if (persistedState.cards) {
+                    Object.entries(persistedState.cards).forEach(([id, card]) => {
+                        migratedCards[id] = {
+                            ...card,
+                            projectId: card.projectId || 'default' // 舊卡片自動歸到預設專案
+                        };
+                    });
                 }
-            })
+
+                // 確保有 deviceId
+                const deviceId = persistedState.deviceId || crypto.randomUUID();
+
+                return {
+                    ...currentState,
+                    ...persistedState,
+                    deviceId,
+                    cards: migratedCards,
+                    unsavedChanges: {
+                        metadata: persistedState.unsavedChanges?.metadata || false,
+                        contents: new Set(persistedState.unsavedChanges?.contents || [])
+                    }
+                };
+            }
         }
     )
 );

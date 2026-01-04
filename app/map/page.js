@@ -63,20 +63,6 @@ export default function CardsPage() {
                 onDownloadFromCloud={handleDownloadFromCloud}
                 onUploadToCloud={handleUploadToCloud}
             />
-
-            {/* 開發測試用：重置按鈕 */}
-            <button
-                onClick={() => {
-                    if (confirm('確定要清除所有卡片資料嗎？這將無法復原。')) {
-                        useCardStore.getState().resetStore();
-                        window.location.reload();
-                    }
-                }}
-                className="absolute bottom-4 left-20 z-50 px-3 py-1 bg-red-500/20 text-red-500 text-xs rounded hover:bg-red-500/30 transition-colors"
-            >
-                清除資料
-            </button>
-
         </main >
     );
 }

@@ -3,11 +3,13 @@
 import { useCallback, useState, useMemo, useEffect } from 'react';
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     Controls,
     MiniMap,
     useNodesState,
     useEdgesState,
+    useReactFlow,
     addEdge,
     MarkerType,
 } from '@xyflow/react';
@@ -22,10 +24,11 @@ const nodeTypes = {
     cardNode: CardNode,
 };
 
-const CardGraph2D = () => {
+// 內層組件，可以使用 useReactFlow
+const CardGraph2DInner = () => {
     const [mounted, setMounted] = useState(false);
     const { resolvedTheme } = useTheme();
-    const [selectedCardId, setSelectedCardId] = useState(null);
+    const { fitView } = useReactFlow(); // ReactFlow hook for viewport control
 
     useEffect(() => {
         setMounted(true);
@@ -41,6 +44,7 @@ const CardGraph2D = () => {
     const getNodes = useCardStore(state => state.getNodes);
     const getEdges = useCardStore(state => state.getEdges);
     const getStats = useCardStore(state => state.getStats);
+    const selectedCardId = useCardStore(state => state.selectedCardId);
 
     // ReactFlow 狀態
     const initialNodes = useMemo(() => getNodes(), [cards]);
@@ -55,9 +59,24 @@ const CardGraph2D = () => {
         setEdges(getEdges());
     }, [cards, showHiddenLinks, setNodes, setEdges, getNodes, getEdges]);
 
+    // 聚焦到選中的卡片
+    useEffect(() => {
+        if (selectedCardId && nodes.length > 0) {
+            const targetNode = nodes.find(n => n.id === selectedCardId);
+            if (targetNode) {
+                fitView({
+                    nodes: [{ id: selectedCardId }],
+                    duration: 500,
+                    padding: 0.3,
+                    maxZoom: 1.5
+                });
+            }
+        }
+    }, [selectedCardId, nodes, fitView]);
+
     // 節點點擊
     const onNodeClick = useCallback((event, node) => {
-        setSelectedCardId(node.id);
+        useCardStore.setState({ selectedCardId: node.id });
     }, []);
 
     // 節點拖曳結束
@@ -92,17 +111,17 @@ const CardGraph2D = () => {
         });
 
         // 開啟新卡片的 Modal
-        setTimeout(() => setSelectedCardId(newCardId), 100);
+        setTimeout(() => useCardStore.setState({ selectedCardId: newCardId }), 100);
     }, [addCard]);
 
     // 關閉 Modal
     const handleCloseModal = useCallback(() => {
-        setSelectedCardId(null);
+        useCardStore.setState({ selectedCardId: null });
     }, []);
 
     // 從 Modal 中點擊其他卡片
     const handleCardClick = useCallback((cardId) => {
-        setSelectedCardId(cardId);
+        useCardStore.setState({ selectedCardId: cardId });
     }, []);
 
     // 主題相關顏色（只在客戶端載入後才使用實際主題）
@@ -110,7 +129,7 @@ const CardGraph2D = () => {
     const themeColors = {
         background: isDark ? '#030712' : '#ffffff',
         dots: isDark ? '#374151' : '#d1d5db',
-        controlsBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
+        controlsBg: 'bg-card border-border', // 使用主題變數
         minimapMask: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
     };
 
@@ -232,6 +251,15 @@ const CardGraph2D = () => {
                 />
             )}
         </>
+    );
+};
+
+// 外層組件，提供 ReactFlow context
+const CardGraph2D = () => {
+    return (
+        <ReactFlowProvider>
+            <CardGraph2DInner />
+        </ReactFlowProvider>
     );
 };
 
