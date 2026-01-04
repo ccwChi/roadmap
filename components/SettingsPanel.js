@@ -215,7 +215,27 @@ export default function SettingsPanel() {
 
               <Button
                 variant="secondary"
-                onClick={() => isSignedIn && loadFromCloud()}
+                onClick={async () => {
+                  if (!isSignedIn) return;
+
+                  try {
+                    // 1. 同步 Roadmap 資料
+                    await loadFromCloud();
+
+                    // 2. 同步卡片資料
+                    const { useCardStore } = await import('@/store/useCardStore');
+                    const loaded = await useCardStore.getState().loadFromCloud();
+
+                    if (loaded) {
+                      alert('同步成功！已載入雲端資料');
+                    } else {
+                      alert('同步完成（雲端無新資料）');
+                    }
+                  } catch (error) {
+                    console.error('同步失敗:', error);
+                    alert('同步失敗，請稍後再試');
+                  }
+                }}
                 disabled={!isSignedIn || isSyncing}
                 className="w-full"
               >

@@ -1,15 +1,25 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
 
 export default function ProgressBar({ compact = false }) {
+  const [mounted, setMounted] = useState(false);
   const currentRoadmapId = useStore((state) => state.currentRoadmapId);
   const getProgress = useStore((state) => state.getProgress);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const roadmap = getRoadmap(currentRoadmapId);
   const totalNodes = roadmap?.nodes?.length || 0;
-  const { completed, percentage } = getProgress(currentRoadmapId, totalNodes);
+
+  // 只在客戶端載入後才取得實際進度
+  const { completed, percentage } = mounted
+    ? getProgress(currentRoadmapId, totalNodes)
+    : { completed: 0, percentage: 0 };
 
   if (compact) {
     return (

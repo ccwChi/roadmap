@@ -43,14 +43,17 @@ export default function HomePage() {
       <h1 className="text-3xl font-bold text-foreground mb-2">AI Roadmap</h1>
       <p className="text-muted-foreground mb-8">互動式學習路線圖</p>
 
-      {/* Main Link */}
-      <Link
-        href="/roadmap-ai_agent"
-        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-lg"
-      >
-        進入學習地圖
-        <ArrowRight className="w-5 h-5" />
-      </Link>
+      {/* Main Links */}
+      <div className="flex flex-col sm:flex-row gap-4">
+
+        <Link
+          href="/map"
+          className="flex items-center gap-2 px-6 py-3 bg-secondary text-foreground font-medium rounded-xl hover:bg-secondary/80 transition-colors shadow-lg border border-border"
+        >
+          學習路線圖
+          <ArrowRight className="w-5 h-5" />
+        </Link>
+      </div>
     </div>
   );
 }

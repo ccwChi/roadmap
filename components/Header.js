@@ -66,7 +66,7 @@ export default function Header() {
           setIsGoogleReady(true);
         }
       } catch (error) {
-        console.error('Google API 初始化失敗:', error);
+        console.error('在roadmap頁面，Google API 初始化失敗:', error);
       }
     };
     initGoogle();
@@ -76,13 +76,18 @@ export default function Header() {
     if (!isGoogleReady) return;
     setIsLoading(true);
     try {
-      const { signIn } = await import('@/lib/googleDrive');
+      const { signIn, waitForGoogleApiReady } = await import('@/lib/googleDrive');
       const userInfo = await signIn();
+
+      await waitForGoogleApiReady(10000);
       setUser(userInfo);
-      // 延遲載入雲端資料，確保 token 已設定
-      setTimeout(() => {
-        loadFromCloud();
-      }, 500);
+
+      // 確保真的有 Token 才載入
+      if (window.gapi?.client?.getToken()) {
+        await loadFromCloud();
+      } else {
+        throw new Error('登入後無法取得 Token');
+      }
     } catch (error) {
       console.error('登入失敗:', error);
     } finally {
@@ -114,7 +119,7 @@ export default function Header() {
   };
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-background via-background/95 to-transparent">
+    <header className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-background via-background/70 to-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Left - Menu + Progress */}
@@ -127,12 +132,12 @@ export default function Header() {
               <Menu className="w-5 h-5 text-foreground" />
             </button>
 
-            <div className="flex-1 max-w-xs">
+            {/* <div className="flex-1 max-w-xs">
               <div className="text-sm font-medium text-foreground mb-1">
                 {currentRoadmap?.icon} {currentRoadmap?.title || 'AI Roadmap'}
               </div>
               <ProgressBar compact />
-            </div>
+            </div> */}
           </div>
 
           {/* Right - Login or User Menu */}

@@ -83,6 +83,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+
+  // 明確設定環境變數（靜態導出需要）
+  env: {
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+    NEXT_PUBLIC_GOOGLE_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
+  },
 };
 
 export default pwaConfig(nextConfig);

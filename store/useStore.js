@@ -121,8 +121,13 @@ export const useStore = create(
         return () => {
           if (timeout) clearTimeout(timeout);
           timeout = setTimeout(async () => {
+            console.log('[Sync] === 開始同步流程 ===');
             const { isSignedIn, progress, notes, settings, isOffline } = get();
-            if (!isSignedIn) return;
+            console.log('[Sync] 1. 登入狀態:', isSignedIn);
+            if (!isSignedIn) {
+              console.log('[Sync] ❌ 未登入，跳過同步');
+              return;
+            }
 
             const syncData = {
               progress,
@@ -133,6 +138,7 @@ export const useStore = create(
 
             // 檢查是否真的在線
             const isReallyOnline = typeof navigator !== 'undefined' && navigator.onLine;
+            console.log('[Sync] 2. 網路狀態:', { isOffline, isReallyOnline });
 
             // 離線時，將資料加入 Background Sync 佇列
             if (isOffline || !isReallyOnline) {
@@ -150,44 +156,65 @@ export const useStore = create(
             }
 
             set({ isSyncing: true, syncError: null });
+            console.log('[Sync] 3. 設定 isSyncing = true');
+
+            // 超時保護：10 秒後強制重置 isSyncing
+            const timeoutId = setTimeout(() => {
+              console.warn('[Sync] 同步超時，強制重置狀態');
+              set({ isSyncing: false, syncError: '同步超時' });
+            }, 10000);
+
             try {
               const { saveData, isGoogleConfigured, waitForGoogleApiReady } = await import('@/lib/googleDrive');
 
               // 檢查 Google API 是否已配置
-              if (!isGoogleConfigured()) {
+              const configured = isGoogleConfigured();
+              console.log('[Sync] 4. Google API 配置:', configured);
+              if (!configured) {
                 console.warn('[Sync] Google API 未配置，跳過雲端同步');
+                clearTimeout(timeoutId);
                 set({ isSyncing: false });
                 return;
               }
 
               // 等待 Google API 就緒（最多等 5 秒）
+              console.log('[Sync] 5. 等待 Google API 就緒（5秒）...');
               try {
                 await waitForGoogleApiReady(5000);
+                console.log('[Sync] ✅ Google API 已就緒');
               } catch {
                 console.warn('[Sync] Google API 未就緒，將資料加入離線佇列');
                 const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
                 await queueSync(syncData);
                 const count = await getPendingCount();
+                clearTimeout(timeoutId);
                 set({ pendingSyncCount: count, syncError: null, isSyncing: false });
                 return;
               }
 
+              console.log('[Sync] 6. 開始儲存到 Google Drive...');
               await saveData(syncData);
+              console.log('[Sync] ✅ 儲存成功');
+              clearTimeout(timeoutId);
               set({
                 lastSyncTime: new Date().toISOString(),
                 syncError: null,
                 pendingSyncCount: 0,
+                isSyncing: false, // ✅ 立即重置，不要等 clearPending
               });
 
-              // 成功後清空離線佇列
-              try {
-                const { clearPending } = await import('@/lib/offlineSync');
-                await clearPending();
-              } catch {
-                // 忽略清空失敗
-              }
+              // 成功後清空離線佇列（背景執行，不阻塞）
+              console.log('[Sync] 7. 清空離線佇列（背景執行）...');
+              import('@/lib/offlineSync').then(({ clearPending }) => {
+                clearPending().then(() => {
+                  console.log('[Sync] ✅ 離線佇列已清空');
+                }).catch((error) => {
+                  console.log('[Sync] ⚠️ 清空離線佇列失敗:', error.message);
+                });
+              });
             } catch (error) {
               console.error('同步失敗:', error);
+              clearTimeout(timeoutId);
               // 同步失敗時，嘗試加入離線佇列
               try {
                 const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
@@ -203,6 +230,7 @@ export const useStore = create(
               }
             } finally {
               set({ isSyncing: false });
+              console.log('[Sync] === 同步流程結束 ===\n');
             }
           }, 500);
         };
@@ -344,9 +372,16 @@ export const useStore = create(
     }),
     {
       name: 'roadmap-storage',
-      // 序列化時將 Set 轉為 Array
-      serialize: (state) => JSON.stringify(state),
-      deserialize: (str) => JSON.parse(str),
+      // 只持久化部分狀態，排除 session 相關 (user, isSignedIn)
+      partialize: (state) => ({
+        currentRoadmapId: state.currentRoadmapId,
+        progress: state.progress,
+        notes: state.notes,
+        // 如果有其他需要持久化的設定，加在這裡
+      }),
+      // 序列化是部分狀態，不需要自定義 serialize (除非 Set/Map 需要)
+      // 但上面原本有用 serialize/deserialize 處理 Set ? 不，progress 內部是 Array (line 33)
+      // 讓我們保持簡單，如果 progress 是物件+陣列，JSON.stringify 是默認行為
     }
   )
 );
