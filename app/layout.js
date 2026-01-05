@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import SettingsPanel from "@/components/SettingsPanel";
 import Sidebar from "@/components/Sidebar";
 import Head from 'next/head';
+import { Toaster } from 'sonner';
 
 export default function RootLayout({ children }) {
   return (
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
           {children}
           <SettingsPanel />
           <Sidebar />
+          <Toaster position="bottom-right" richColors closeButton />
         </ThemeProvider>
       </body>
     </html>

@@ -107,6 +107,10 @@ export const useCardStore = create(
             lastLocalSyncTime: null, // 上次本地同步的時間
             syncConflict: null, // 同步衝突資訊
             deviceId: null, // 唯一的裝置 ID (UUID)，用於識別修改來源
+            autoSyncEnabled: true, // 自動同步開關（預設開啟）
+
+            // 切換自動同步
+            toggleAutoSync: () => set(state => ({ autoSyncEnabled: !state.autoSyncEnabled })),
 
             // ===== 髒檢查 (Dirty Checking) =====
             unsavedChanges: {
@@ -436,6 +440,13 @@ export const useCardStore = create(
 
                         if (!metadataDirty && contentDirtyIds.length === 0) {
                             return; // 無需同步
+                        }
+
+                        // 檢查自動同步開關
+                        const { autoSyncEnabled } = get();
+                        if (!autoSyncEnabled) {
+                            console.log('[CardSync] ⏸️ 自動同步已停用，跳過同步');
+                            return;
                         }
 
                         console.log('[CardSync] === 開始差異同步 ===');
@@ -782,6 +793,7 @@ export const useCardStore = create(
                 lastModified: state.lastModified,
                 lastSyncedCloudTime: state.lastSyncedCloudTime,
                 deviceId: state.deviceId, // 持久化 deviceId
+                autoSyncEnabled: state.autoSyncEnabled, // 持久化自動同步設定
                 unsavedChanges: {
                     metadata: state.unsavedChanges.metadata,
                     contents: Array.from(state.unsavedChanges.contents) // Set 轉 Array

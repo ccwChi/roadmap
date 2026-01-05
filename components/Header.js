@@ -17,7 +17,8 @@ import {
   WifiOff,
   Download,
   Upload,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { useStore, useUIStore } from '@/store/useStore';
 import { getRoadmap } from '@/data/roadmaps';
@@ -48,7 +49,7 @@ export default function Header() {
     currentRoadmapId,
   } = useStore();
 
-  const { isSyncing: isCardSyncing } = useCardStore();
+  const { isSyncing: isCardSyncing, autoSyncEnabled, toggleAutoSync } = useCardStore();
 
   // 初始化離線同步
   useOfflineSync();
@@ -68,10 +69,13 @@ export default function Header() {
   useEffect(() => {
     const initGoogle = async () => {
       try {
-        const { isGoogleConfigured, loadGoogleScripts } = await import('@/lib/googleDrive');
+        const { isGoogleConfigured, loadGoogleScripts, initVisibilityListener } = await import('@/lib/googleDrive');
         if (isGoogleConfigured()) {
           await loadGoogleScripts();
           setIsGoogleReady(true);
+
+          // 初始化頁面可見性監聽（處理休眠喚醒）
+          initVisibilityListener();
         }
       } catch (error) {
         console.error('在roadmap頁面，Google API 初始化失敗:', error);
@@ -152,6 +156,29 @@ export default function Header() {
     } catch (error) {
       console.error('上傳到雲端失敗:', error);
       alert('上傳失敗：' + error.message);
+    }
+  };
+
+  // 手動刷新 Token
+  const handleRefreshToken = async () => {
+    try {
+      const { refreshAccessToken } = await import('@/lib/googleDrive');
+      const { toast } = await import('sonner');
+
+      await refreshAccessToken();
+      console.log('[Header] ✅ Token 手動刷新成功');
+
+      // 使用 Sonner toast
+      toast.success('登入已更新', {
+        description: 'Google 登入狀態已刷新'
+      });
+    } catch (error) {
+      const { toast } = await import('sonner');
+      console.error('[Header] ❌ Token 刷新失敗:', error);
+
+      toast.error('登入更新失敗', {
+        description: '請點擊右上角重新登入'
+      });
     }
   };
 
@@ -267,7 +294,7 @@ export default function Header() {
     if (isOffline) return <WifiOff className="w-3 h-3 text-orange-500" />;
     if (syncError) return <AlertCircle className="w-3 h-3 text-red-500" />;
     if (lastSyncTime) return <Cloud className="w-3 h-3 text-green-500" />;
-    return <CloudOff className="w-3 h-3 text-muted-foreground" />;
+    return <Cloud className="w-3 h-3 text-muted-foreground" />;
   };
 
   return (
@@ -329,6 +356,22 @@ export default function Header() {
                   {/* 雲端同步 */}
                   <div className="px-2 py-1">
                     <p className="text-xs font-medium text-muted-foreground px-2 py-1">雲端同步</p>
+
+                    {/* 自動同步開關 */}
+                    <div className="flex items-center justify-between px-2 py-2 hover:bg-secondary rounded-md cursor-pointer" onClick={toggleAutoSync}>
+                      <div className="flex items-center gap-2">
+                        <Cloud className="w-4 h-4" />
+                        <span className="text-sm">自動同步</span>
+                      </div>
+                      <div className={`w-9 h-5 rounded-full transition-colors ${autoSyncEnabled ? 'bg-primary' : 'bg-secondary'} relative`}>
+                        <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoSyncEnabled ? 'translate-x-4' : ''}`} />
+                      </div>
+                    </div>
+
+                    <DropdownMenuItem onClick={handleRefreshToken}>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      更新登入狀態
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleUploadToCloud} disabled={isCardSyncing}>
                       <Cloud className="w-4 h-4 mr-2" />
                       上傳到雲端
