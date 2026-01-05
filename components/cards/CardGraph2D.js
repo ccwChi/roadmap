@@ -20,6 +20,16 @@ import { useCardStore } from '@/store/useCardStore';
 import CardNode from './CardNode';
 import CardModal from './CardModal';
 import CustomEdge from './CustomEdge';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const nodeTypes = {
     cardNode: CardNode,
@@ -54,6 +64,9 @@ const CardGraph2DInner = () => {
     const getEdges = useCardStore(state => state.getEdges);
     const getStats = useCardStore(state => state.getStats);
     const selectedCardId = useCardStore(state => state.selectedCardId);
+    const cardToDelete = useCardStore(state => state.cardToDelete);
+    const setCardToDelete = useCardStore(state => state.setCardToDelete);
+    const deleteCard = useCardStore(state => state.deleteCard);
 
     // ReactFlow 狀態
     const initialNodes = useMemo(() => getNodes(), [cards]);
@@ -171,16 +184,27 @@ const CardGraph2DInner = () => {
         useCardStore.setState({ selectedCardId: cardId });
     }, []);
 
-    // 主題相關顏色（只在客戶端載入後才使用實際主題）
-    const isDark = mounted ? (resolvedTheme === 'dark') : true; // 預設深色
+    // 主題相關顏色
+    const isDark = mounted ? (resolvedTheme === 'dark') : true;
     const themeColors = {
         background: isDark ? '#030712' : '#ffffff',
         dots: isDark ? '#374151' : '#d1d5db',
-        controlsBg: 'bg-card border-border', // 使用主題變數
+        // 使用 CSS class 來覆蓋 ReactFlow Controls 樣式
+        // 強制覆蓋背景色和邊框顏色
+        controlsClassName: isDark
+            ? '!bg-gray-800 !border-gray-700 [&>button]:!bg-gray-800 [&>button]:!border-gray-700 [&>button:hover]:!bg-gray-700 [&_svg]:!fill-gray-200'
+            : '!bg-white !border-gray-200 [&>button]:!bg-white [&>button]:!border-gray-200 [&>button:hover]:!bg-gray-50 [&_svg]:!fill-gray-700',
         minimapMask: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
     };
 
     const stats = getStats();
+
+    const confirmDelete = () => {
+        if (cardToDelete) {
+            deleteCard(cardToDelete);
+            setCardToDelete(null);
+        }
+    };
 
     // 只在客戶端渲染 ReactFlow
     if (!mounted) {
@@ -233,7 +257,7 @@ const CardGraph2DInner = () => {
                         variant="dots"
                     />
                     <Controls
-                        className={`${themeColors.controlsBg} border rounded-lg`}
+                        className={`${themeColors.controlsClassName} border rounded-lg shadow-sm`}
                         showInteractive={false}
                     />
                     {/* <MiniMap
@@ -295,6 +319,24 @@ const CardGraph2DInner = () => {
                     onCardClick={handleCardClick}
                 />
             )}
+
+            {/* 刪除確認對話框 */}
+            <AlertDialog open={!!cardToDelete} onOpenChange={(open) => !open && setCardToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>確定要刪除這張卡片嗎？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            此操作無法撤銷。卡片及其相關連線都將被刪除。
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setCardToDelete(null)}>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                            刪除
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 };

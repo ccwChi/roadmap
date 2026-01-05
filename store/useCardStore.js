@@ -118,6 +118,10 @@ export const useCardStore = create(
                 contents: new Set() // Set<cardId>
             },
 
+            // ===== UI 狀態 =====
+            cardToDelete: null, // 待刪除的卡片 ID (用於顯示確認對話框)
+            setCardToDelete: (id) => set({ cardToDelete: id }),
+
             markMetadataDirty: () => set(state => ({
                 unsavedChanges: { ...state.unsavedChanges, metadata: true },
                 lastModified: new Date().toISOString()

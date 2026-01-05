@@ -4,6 +4,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Link2, Tag } from 'lucide-react';
 import { useCardStore } from '@/store/useCardStore';
+import NodeToolbar from './NodeToolbar';
 
 const CardNode = ({ data, selected, id }) => {
     const { title, summary, tags, color, linkCount } = data;
@@ -11,6 +12,8 @@ const CardNode = ({ data, selected, id }) => {
     const [editedTitle, setEditedTitle] = useState(title);
     const titleInputRef = useRef(null);
     const updateCard = useCardStore(state => state.updateCard);
+    const deleteCard = useCardStore(state => state.deleteCard);
+    const setCardToDelete = useCardStore(state => state.setCardToDelete);
 
     // 當進入編輯模式時，自動聚焦
     useEffect(() => {
@@ -45,6 +48,11 @@ const CardNode = ({ data, selected, id }) => {
         }
     };
 
+    // Toolbar 處理函數
+    const handleDelete = () => {
+        setCardToDelete(id);
+    };
+
     return (
         <div
             className={`
@@ -57,6 +65,12 @@ const CardNode = ({ data, selected, id }) => {
                 ${selected ? 'ring-2 ring-blue-400 dark:ring-blue-500 shadow-lg' : ''}
             `}
         >
+            {/* 迷你工具欄 */}
+            <NodeToolbar
+                nodeId={id}
+                onDelete={handleDelete}
+            />
+
             {/* 連接點 - 左 */}
             <Handle
                 type="target"
@@ -140,4 +154,3 @@ const CardNode = ({ data, selected, id }) => {
 };
 
 export default memo(CardNode);
-
