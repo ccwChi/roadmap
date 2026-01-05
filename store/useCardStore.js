@@ -353,6 +353,29 @@ export const useCardStore = create(
                 get().syncToCloud();
             },
 
+            // 更新連線標籤
+            updateLinkLabel: (sourceId, targetId, label) => {
+                const sourceCard = get().cards[sourceId];
+                if (!sourceCard) return;
+
+                set(state => ({
+                    cards: {
+                        ...state.cards,
+                        [sourceId]: {
+                            ...sourceCard,
+                            links: sourceCard.links.map(link =>
+                                link.targetId === targetId
+                                    ? { ...link, label: label || '' }
+                                    : link
+                            ),
+                            updatedAt: new Date().toISOString()
+                        }
+                    }
+                }));
+
+                get().syncToCloud();
+            },
+
             // ===== 內容管理（按需載入） =====
 
             // 載入卡片內容
@@ -705,13 +728,18 @@ export const useCardStore = create(
                                 id: `${card.id}-${link.targetId}-${index}`,
                                 source: card.id,
                                 target: link.targetId,
-                                type: 'smoothstep',
-                                animated: true,
-                                label: link.label,
+                                type: link.edgeType || 'smoothstep', // 支持自定義邊類型
+                                animated: link.animated !== false, // 默認動畫
+                                label: link.label, // 連線標籤
                                 style: {
-                                    stroke: link.isHidden ? '#94a3b880' : '#94a3b8',
-                                    strokeWidth: link.isHidden ? 1 : 2,
-                                    strokeDasharray: link.isHidden ? '5,5' : '0'
+                                    stroke: link.isHidden ? '#94a3b880' : (link.color || '#94a3b8'),
+                                    strokeWidth: link.isHidden ? 1 : (link.strokeWidth || 2),
+                                    strokeDasharray: link.lineStyle === 'dashed' ? '5,5' :
+                                        link.lineStyle === 'dotted' ? '2,2' : '0'
+                                },
+                                markerEnd: {
+                                    type: 'arrowclosed',
+                                    color: link.color || '#94a3b8',
                                 }
                             });
                         });

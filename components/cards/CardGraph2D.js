@@ -19,9 +19,17 @@ import { Plus, Eye, EyeOff } from 'lucide-react';
 import { useCardStore } from '@/store/useCardStore';
 import CardNode from './CardNode';
 import CardModal from './CardModal';
+import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
     cardNode: CardNode,
+};
+
+const edgeTypes = {
+    default: CustomEdge,
+    smoothstep: CustomEdge,
+    straight: CustomEdge,
+    step: CustomEdge,
 };
 
 // 內層組件，可以使用 useReactFlow
@@ -40,6 +48,7 @@ const CardGraph2DInner = () => {
     const toggleHiddenLinks = useCardStore(state => state.toggleHiddenLinks);
     const addCard = useCardStore(state => state.addCard);
     const addLink = useCardStore(state => state.addLink);
+    const removeLink = useCardStore(state => state.removeLink);
     const updateNodePosition = useCardStore(state => state.updateNodePosition);
     const getNodes = useCardStore(state => state.getNodes);
     const getEdges = useCardStore(state => state.getEdges);
@@ -51,7 +60,45 @@ const CardGraph2DInner = () => {
     const initialEdges = useMemo(() => getEdges(), [cards, showHiddenLinks]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [edges, setEdges, defaultOnEdgesChange] = useEdgesState(initialEdges);
+
+    // 自定義邊變更處理（處理刪除）
+    const onEdgesChange = useCallback((changes) => {
+        console.log('[CardGraph2D] onEdgesChange:', changes);
+
+        // 先處理刪除操作
+        changes.forEach(change => {
+            if (change.type === 'remove') {
+                console.log('[CardGraph2D] Remove detected, ID:', change.id);
+
+                // 解析邊 ID: '${sourceId}-${targetId}-${index}'
+                // sourceId 和 targetId 都包含 '-', 需要正確解析
+                // 從最後找到 '-數字'，那是 index
+                const lastDashIndex = change.id.lastIndexOf('-');
+                const withoutIndex = change.id.substring(0, lastDashIndex);
+
+                // 找第二個 'card-' 的位置
+                const firstCardIndex = withoutIndex.indexOf('card-');
+                const secondCardIndex = withoutIndex.indexOf('card-', firstCardIndex + 1);
+
+                if (secondCardIndex > 0) {
+                    const sourceId = withoutIndex.substring(0, secondCardIndex - 1);
+                    const targetId = withoutIndex.substring(secondCardIndex);
+
+                    console.log('[CardGraph2D] Parsed sourceId:', sourceId);
+                    console.log('[CardGraph2D] Parsed targetId:', targetId);
+
+                    removeLink(sourceId, targetId);
+                    console.log('[CardGraph2D] removeLink complete');
+                } else {
+                    console.error('[CardGraph2D] Failed to parse edge ID:', change.id);
+                }
+            }
+        });
+
+        // 然後應用到 ReactFlow 狀態
+        defaultOnEdgesChange(changes);
+    }, [removeLink, defaultOnEdgesChange]);
 
     // 當 cards 變化時更新節點和邊
     useEffect(() => {
@@ -92,7 +139,7 @@ const CardGraph2DInner = () => {
     const onConnect = useCallback((connection) => {
         addLink(connection.source, connection.target, {
             type: 'reference',
-            label: '連結'
+            // 不設置默認 label，讓用戶需要時再添加
         });
     }, [addLink]);
 
@@ -159,9 +206,13 @@ const CardGraph2DInner = () => {
                     onNodeDragStop={onNodeDragStop}
                     onConnect={onConnect}
                     nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
                     fitView
                     minZoom={0.1}
                     maxZoom={2}
+                    deleteKeyCode="Delete"
+                    edgesReconnectable={false}
+                    edgesFocusable={true}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
                         animated: true,
@@ -194,37 +245,31 @@ const CardGraph2DInner = () => {
                     /> */}
                 </ReactFlow>
 
-                {/* 工具列 */}
-                <div className="absolute top-18 right-6 z-50 flex flex-col gap-2">
+                {/* 工具列 - 清爽風格 */}
+                <div className="absolute top-20 right-4 z-50 flex flex-col gap-3">
                     {/* 新增卡片 */}
                     <button
                         onClick={handleAddCard}
-                        className="flex flex-row items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-colors"
-                        style={{ writingMode: 'vertical-lr' }}
-                        title="新增卡片"
+                        className="group flex items-center justify-center w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        title="新增卡片 (點擊)"
                     >
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">新增卡片</span>
+                        <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:rotate-90 transition-transform duration-200" />
                     </button>
 
-                    {/* 顯示/隱藏隱藏連線 */}
+                    {/* 顯示/隱藏連線 */}
                     <button
                         onClick={toggleHiddenLinks}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg transition-colors ${showHiddenLinks
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border hover:bg-secondary'
+                        className={`group flex items-center justify-center w-12 h-12 backdrop-blur-sm border rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 ${showHiddenLinks
+                            ? 'bg-blue-500/90 dark:bg-blue-600/90 border-blue-400 dark:border-blue-500'
+                            : 'bg-white/90 dark:bg-gray-800/90 border-gray-200 dark:border-gray-700'
                             }`}
-                        style={{ writingMode: 'vertical-lr' }}
                         title={showHiddenLinks ? '隱藏文字連結' : '顯示文字連結'}
                     >
                         {showHiddenLinks ? (
-                            <Eye className="w-5 h-5" />
+                            <Eye className="w-5 h-5 text-white" />
                         ) : (
-                            <EyeOff className="w-5 h-5" />
+                            <EyeOff className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         )}
-                        <span className="hidden sm:inline">
-                            {showHiddenLinks ? '隱藏' : '顯示'}文字連結
-                        </span>
                     </button>
                 </div>
 
