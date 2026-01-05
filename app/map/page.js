@@ -29,7 +29,10 @@ export default function CardsPage() {
                     const isSignedIn = useStore.getState().isSignedIn;
 
                     if (!isSignedIn) {
-                        alert('請先登入 Google 帳號才能同步到雲端\n\n💡 您可以使用「匯出資料」功能來備份本地資料');
+                        const { toast } = await import('sonner');
+                        toast.error('無法同步', {
+                            description: '請先登入 Google 帳號才能同步到雲端。您可以改用「匯出資料」功能來備份。'
+                        });
                         console.log('[Ctrl+S] ⚠️ 未登入，無法同步');
                         return;
                     }
@@ -39,7 +42,10 @@ export default function CardsPage() {
                     const apiReady = await isGoogleApiReady();
 
                     if (!apiReady) {
-                        alert('Google 登入已過期，請重新登入\n\n點擊右上角的登入按鈕重新驗證');
+                        const { toast } = await import('sonner');
+                        toast.error('同步失敗', {
+                            description: 'Google 登入已過期，請點擊右上角重新登入。'
+                        });
                         console.log('[Ctrl+S] ⚠️ Token 已過期');
                         return;
                     }

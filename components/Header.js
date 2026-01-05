@@ -34,6 +34,18 @@ import {
 import { useCardStore } from '@/store/useCardStore';
 import SyncConflictDialog from './SyncConflictDialog';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
+
 export default function Header() {
   const { toggleSidebar, setSettingsOpen } = useUIStore();
   const {
@@ -59,6 +71,11 @@ export default function Header() {
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [syncConflict, setSyncConflict] = useState(null);
+
+  // Dialog states
+  const [showImportAlert, setShowImportAlert] = useState(false);
+  const [showClearAlert, setShowClearAlert] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState(null);
 
   const currentRoadmap = getRoadmap(currentRoadmapId);
 
@@ -108,6 +125,7 @@ export default function Header() {
       }
     } catch (error) {
       console.error('登入失敗:', error);
+      toast.error('登入失敗', { description: '請確認網路狀態或稍後再試' });
     } finally {
       setIsLoading(false);
     }
@@ -118,8 +136,10 @@ export default function Header() {
       const { signOut } = await import('@/lib/googleDrive');
       signOut();
       setUser(null);
+      toast.success('已登出');
     } catch (error) {
       console.error('登出失敗:', error);
+      toast.error('登出失敗');
     }
   };
 
@@ -139,9 +159,10 @@ export default function Header() {
         const { loadFromCloud } = useCardStore.getState();
         await loadFromCloud();
       }
+      toast.success('下載成功', { description: '已從雲端更新資料' });
     } catch (error) {
       console.error('下載雲端資料失敗:', error);
-      alert('下載失敗：' + error.message);
+      toast.error('下載失敗', { description: error.message });
     }
   };
 
@@ -153,9 +174,10 @@ export default function Header() {
       if (syncConflict) {
         setSyncConflict(null);
       }
+      toast.success('上傳成功', { description: '資料已保存至雲端' });
     } catch (error) {
       console.error('上傳到雲端失敗:', error);
-      alert('上傳失敗：' + error.message);
+      toast.error('上傳失敗', { description: error.message });
     }
   };
 
@@ -163,19 +185,15 @@ export default function Header() {
   const handleRefreshToken = async () => {
     try {
       const { refreshAccessToken } = await import('@/lib/googleDrive');
-      const { toast } = await import('sonner');
 
       await refreshAccessToken();
       console.log('[Header] ✅ Token 手動刷新成功');
 
-      // 使用 Sonner toast
       toast.success('登入已更新', {
         description: 'Google 登入狀態已刷新'
       });
     } catch (error) {
-      const { toast } = await import('sonner');
       console.error('[Header] ❌ Token 刷新失敗:', error);
-
       toast.error('登入更新失敗', {
         description: '請點擊右上角重新登入'
       });
@@ -206,13 +224,15 @@ export default function Header() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      toast.success('匯出成功', { description: '備份檔案已下載' });
     } catch (error) {
       console.error('匯出資料失敗:', error);
-      alert('匯出失敗：' + error.message);
+      toast.error('匯出失敗', { description: error.message });
     }
   };
 
-  // 匯入資料
+  // 匯入資料 - 觸發檔案選擇
   const handleImportData = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -230,61 +250,78 @@ export default function Header() {
           throw new Error('無效的備份檔案格式');
         }
 
-        if (confirm('匯入資料將覆蓋現有的本地資料，是否繼續？')) {
-          const { cards, cardContents, projects, currentProjectId } = importData;
-          useCardStore.setState({
-            cards: cards || {},
-            cardContents: cardContents || {},
-            projects: projects || { 'default': { id: 'default', name: '預設專案', icon: '📝' } },
-            currentProjectId: currentProjectId || 'default'
-          });
-
-          alert('資料匯入成功！');
-        }
+        setPendingImportData(importData);
+        setShowImportAlert(true);
       } catch (error) {
         console.error('匯入資料失敗:', error);
-        alert('匯入失敗：' + error.message);
+        toast.error('匯入讀取失敗', { description: error.message });
       }
     };
 
     input.click();
   };
 
-  // 清除本地資料
+  // 確認匯入
+  const confirmImport = () => {
+    if (!pendingImportData) return;
+
+    try {
+      const { cards, cardContents, projects, currentProjectId } = pendingImportData;
+      useCardStore.setState({
+        cards: cards || {},
+        cardContents: cardContents || {},
+        projects: projects || { 'default': { id: 'default', name: '預設專案', icon: '📝' } },
+        currentProjectId: currentProjectId || 'default'
+      });
+
+      toast.success('資料匯入成功');
+    } catch (error) {
+      console.error('匯入應用失敗:', error);
+      toast.error('匯入失敗', { description: error.message });
+    } finally {
+      setShowImportAlert(false);
+      setPendingImportData(null);
+    }
+  };
+
+  // 清除本地資料 - 觸發確認
   const handleClearData = () => {
-    if (confirm('確定要清除所有本地資料嗎？此操作無法復原！\n\n建議先匯出備份。')) {
-      if (confirm('最後確認：真的要清除所有資料嗎？')) {
-        try {
-          // 清除 Zustand store
-          useCardStore.setState({
-            cards: {},
-            cardContents: {},
-            projects: {
-              'default': {
-                id: 'default',
-                name: '預設專案',
-                icon: '📝',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              }
-            },
-            currentProjectId: 'default',
-            unsavedChanges: { metadata: false, contents: new Set() }
-          });
+    setShowClearAlert(true);
+  };
 
-          // 清除 localStorage 中的卡片內容
-          Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('card-content-')) {
-              localStorage.removeItem(key);
-            }
-          });
+  // 確認清除
+  const confirmClear = () => {
+    try {
+      // 清除 Zustand store
+      useCardStore.setState({
+        cards: {},
+        cardContents: {},
+        projects: {
+          'default': {
+            id: 'default',
+            name: '預設專案',
+            icon: '📝',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        },
+        currentProjectId: 'default',
+        unsavedChanges: { metadata: false, contents: new Set() }
+      });
 
-          alert('本地資料已清除！');
-        } catch (error) {
-          console.error('清除資料失敗:', error);
-          alert('清除失敗：' + error.message);
+      // 清除 localStorage 中的卡片內容
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('card-content-')) {
+          localStorage.removeItem(key);
         }
-      }
+      });
+
+      toast.success('本地資料已清除');
+    } catch (error) {
+      console.error('清除資料失敗:', error);
+      toast.error('清除失敗', { description: error.message });
+    } finally {
+      setShowClearAlert(false);
     }
   };
 
@@ -439,6 +476,46 @@ export default function Header() {
         onDownloadFromCloud={handleDownloadFromCloud}
         onUploadToCloud={handleUploadToCloud}
       />
+
+      {/* 匯入確認對話框 */}
+      <AlertDialog open={showImportAlert} onOpenChange={setShowImportAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確定要匯入資料嗎？</AlertDialogTitle>
+            <AlertDialogDescription>
+              匯入將會完全覆蓋現有的本地資料。此操作無法撤銷。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowImportAlert(false); setPendingImportData(null); }}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmImport} className="bg-primary">
+              確認匯入
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 清除確認對話框 */}
+      <AlertDialog open={showClearAlert} onOpenChange={setShowClearAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確定要清除所有資料嗎？</AlertDialogTitle>
+            <AlertDialogDescription>
+              這將刪除所有本地存儲的卡片、專案和內容。此操作無法撤銷。
+              <br /><br />
+              建議您先匯出備份。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowClearAlert(false)}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClear} className="bg-red-600 hover:bg-red-700">
+              確認清除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

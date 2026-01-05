@@ -23,6 +23,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import ProjectDialog from './ProjectDialog';
 
@@ -44,6 +54,7 @@ export default function Sidebar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   // 確保在客戶端渲染
   useEffect(() => {
@@ -82,10 +93,15 @@ export default function Sidebar() {
     }
   };
 
-  const handleDeleteProject = (projectId, e) => {
+  const handleDeleteProjectClick = (projectId, e) => {
     e.stopPropagation();
-    if (confirm('確定要刪除此專案及其所有卡片嗎？')) {
-      deleteProject(projectId);
+    setProjectToDelete(projectId);
+  };
+
+  const confirmDeleteProject = () => {
+    if (projectToDelete) {
+      deleteProject(projectToDelete);
+      setProjectToDelete(null);
     }
   };
 
@@ -181,7 +197,7 @@ export default function Sidebar() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteProject(project.id, e);
+                              handleDeleteProjectClick(project.id, e);
                             }}
                             className="p-1 hover:bg-destructive/20 rounded transition-colors"
                             title="刪除專案"
@@ -301,6 +317,24 @@ export default function Sidebar() {
         project={editingProject}
         onSave={handleSaveProject}
       />
+
+      {/* 刪除確認對話框 */}
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確定要刪除此專案嗎？</AlertDialogTitle>
+            <AlertDialogDescription>
+              將刪除專案及其所有卡片，此操作無法撤銷。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProjectToDelete(null)}>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject} className="bg-red-600 hover:bg-red-700">
+              刪除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

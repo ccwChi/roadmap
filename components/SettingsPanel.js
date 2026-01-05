@@ -19,6 +19,18 @@ import {
   isGoogleConfigured,
 } from '@/lib/googleDrive';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
+
 export default function SettingsPanel() {
   const { settingsOpen, setSettingsOpen } = useUIStore();
   const {
@@ -38,6 +50,11 @@ export default function SettingsPanel() {
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [googleConfigured, setGoogleConfigured] = useState(false);
+
+  // Dialog states
+  const [showImportAlert, setShowImportAlert] = useState(false);
+  const [showClearAlert, setShowClearAlert] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState(null);
 
   // 載入 Google API
   useEffect(() => {
@@ -76,9 +93,10 @@ export default function SettingsPanel() {
     try {
       const userInfo = await signIn();
       setUser(userInfo);
+      toast.success('登入成功', { description: `歡迎, ${userInfo.name}` });
     } catch (error) {
       console.error('登入失敗:', error);
-      alert('登入失敗，請稍後再試');
+      toast.error('登入失敗', { description: '請確認網路狀態或稍後再試' });
     } finally {
       setIsLoggingIn(false);
     }
@@ -87,6 +105,7 @@ export default function SettingsPanel() {
   const handleGoogleLogout = () => {
     signOut();
     setUser(null);
+    toast.success('已登出');
   };
 
   const handleExportData = () => {
@@ -103,6 +122,7 @@ export default function SettingsPanel() {
     a.download = `roadmap-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success('匯出成功', { description: '備份檔案已下載' });
   };
 
   const handleImportData = (event) => {
@@ -112,22 +132,42 @@ export default function SettingsPanel() {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (data.progress) useStore.setState({ progress: data.progress });
-        if (data.notes) useStore.setState({ notes: data.notes });
-        if (data.settings) updateSettings(data.settings);
-        alert('資料匯入成功！');
+        setPendingImportData(data);
+        setShowImportAlert(true);
       } catch {
-        alert('匯入失敗：檔案格式不正確');
+        toast.error('匯入失敗', { description: '檔案格式不正確' });
       }
     };
     reader.readAsText(file);
+    // 重置 input value 以便下次可以選擇同名檔案
+    event.target.value = '';
   };
 
-  const handleReset = () => {
-    if (confirm('確定要清除所有資料嗎？')) {
-      resetAll();
-      setSettingsOpen(false);
+  const confirmImport = () => {
+    if (!pendingImportData) return;
+
+    try {
+      if (pendingImportData.progress) useStore.setState({ progress: pendingImportData.progress });
+      if (pendingImportData.notes) useStore.setState({ notes: pendingImportData.notes });
+      if (pendingImportData.settings) updateSettings(pendingImportData.settings);
+      toast.success('資料匯入成功');
+    } catch (error) {
+      toast.error('匯入應用失敗', { description: error.message });
+    } finally {
+      setShowImportAlert(false);
+      setPendingImportData(null);
     }
+  };
+
+  const handleResetClick = () => {
+    setShowClearAlert(true);
+  };
+
+  const confirmReset = () => {
+    resetAll();
+    setSettingsOpen(false);
+    setShowClearAlert(false);
+    toast.success('所有資料已清除');
   };
 
   return (
@@ -227,13 +267,13 @@ export default function SettingsPanel() {
                     const loaded = await useCardStore.getState().loadFromCloud();
 
                     if (loaded) {
-                      alert('同步成功！已載入雲端資料');
+                      toast.success('同步成功', { description: '已載入雲端資料' });
                     } else {
-                      alert('同步完成（雲端無新資料）');
+                      toast.info('同步完成', { description: '雲端無新資料' });
                     }
                   } catch (error) {
                     console.error('同步失敗:', error);
-                    alert('同步失敗，請稍後再試');
+                    toast.error('同步失敗', { description: '請稍後再試' });
                   }
                 }}
                 disabled={!isSignedIn || isSyncing}
@@ -268,7 +308,7 @@ export default function SettingsPanel() {
 
               <Button
                 variant="destructive"
-                onClick={handleReset}
+                onClick={handleResetClick}
                 className="w-full"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -277,6 +317,45 @@ export default function SettingsPanel() {
             </div>
           </section>
         </div>
+
+        {/* 匯入確認對話框 */}
+        <AlertDialog open={showImportAlert} onOpenChange={setShowImportAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>確定要匯入資料嗎？</AlertDialogTitle>
+              <AlertDialogDescription>
+                匯入將會覆蓋現有的進度與設定。此操作無法撤銷。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => { setShowImportAlert(false); setPendingImportData(null); }}>
+                取消
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={confirmImport} className="bg-primary">
+                確認匯入
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* 清除確認對話框 */}
+        <AlertDialog open={showClearAlert} onOpenChange={setShowClearAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>確定要清除所有資料嗎？</AlertDialogTitle>
+              <AlertDialogDescription>
+                這將刪除所有追蹤進度、筆記與設定。此操作無法撤銷。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowClearAlert(false)}>取消</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmReset} className="bg-red-600 hover:bg-red-700">
+                確認清除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </SheetContent>
     </Sheet>
   );
