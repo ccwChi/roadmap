@@ -101,29 +101,45 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
         }
     }, [isDragging, handleDragMove, handleDragEnd]);
 
+    // 關閉整個 Sheet
+    const handleCloseSheet = useCallback(() => {
+        setOpenTabs([]);
+        setActiveTab(null);
+        lastFocusedCardRef.current = null; // 重置聚焦記錄
+        useCardStore.setState({ selectedCardId: null });
+        onClose?.();
+    }, [onClose]);
+
     // 關閉特定 tab
     const closeTab = useCallback((cardId, e) => {
         e?.stopPropagation();
 
-        setOpenTabs(prev => {
-            const newTabs = prev.filter(id => id !== cardId);
+        // 這裡不需要使用 prev，因為 openTabs 是依賴項
+        // 如果想避免依賴 openTabs，可以使用函數式更新但不要在裡面執行副作用
+        // 考慮到邏輯複雜性，直接讀取當前狀態比較清晰
 
-            if (activeTab === cardId) {
-                const currentIndex = prev.indexOf(cardId);
-                const newActiveTab = newTabs[currentIndex - 1] || newTabs[0] || null;
-                setActiveTab(newActiveTab);
+        const newTabs = openTabs.filter(id => id !== cardId);
+        setOpenTabs(newTabs);
 
-                if (!newActiveTab) {
-                    onClose?.();
-                    useCardStore.setState({ selectedCardId: null });
-                } else {
-                    useCardStore.setState({ selectedCardId: newActiveTab });
-                }
+        if (activeTab === cardId) {
+            const currentIndex = openTabs.indexOf(cardId);
+            // 優先選擇左邊的 tab，如果沒有則選擇剩下的第一個
+            const newActiveTab = newTabs[currentIndex - 1] || newTabs[0] || null;
+            setActiveTab(newActiveTab);
+
+            if (!newActiveTab) {
+                // 如果沒有活動 tab 了，關閉 Sheet
+                handleCloseSheet(); // 使用封裝好的關閉函數
+            } else {
+                // 如果還有 tab，切換選中狀態（這會觸發聚焦）
+                useCardStore.setState({ selectedCardId: newActiveTab });
+
+                // 這裡可能需要手動觸發聚焦，雖然 useEffect 會監聽到 selectedCardId 變化
+                // 但為了保險起見，可以更新 ref
+                lastFocusedCardRef.current = newActiveTab;
             }
-
-            return newTabs;
-        });
-    }, [activeTab, onClose]);
+        }
+    }, [activeTab, openTabs, handleCloseSheet]);
 
     // 切換 tab
     const switchTab = useCallback((cardId) => {
@@ -133,14 +149,7 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
         useCardStore.setState({ selectedCardId: cardId });
     }, [onCardFocus, width]);
 
-    // 關閉整個 Sheet
-    const handleCloseSheet = useCallback(() => {
-        setOpenTabs([]);
-        setActiveTab(null);
-        lastFocusedCardRef.current = null; // 重置聚焦記錄
-        useCardStore.setState({ selectedCardId: null });
-        onClose?.();
-    }, [onClose]);
+
 
     if (!open || openTabs.length === 0) return null;
 
@@ -264,7 +273,7 @@ const CardEditor = ({ cardId }) => {
     const [editSummaryText, setEditSummaryText] = useState('');
     const [newTagInput, setNewTagInput] = useState('');
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-    const [drawerCardId, setDrawerCardId] = useState(null);
+
 
     const contentTextareaRef = useRef(null);
 
@@ -345,19 +354,13 @@ const CardEditor = ({ cardId }) => {
     const handleCreateCardFromSelection = (start, end, linkText, newCardId) => {
         const newContent = editContent.substring(0, start) + linkText + editContent.substring(end);
         setEditContent(newContent);
-        setTimeout(() => {
-            setDrawerCardId(newCardId);
-        }, 100);
+        // 直接在 Sheet 中切換到新卡片（添加新 tab）
+        useCardStore.setState({ selectedCardId: newCardId });
     };
 
     const handleCardLinkClick = (linkedCardId) => {
         // 直接切換到該卡片（會添加新 tab）
         useCardStore.setState({ selectedCardId: linkedCardId });
-    };
-
-    const handleDrawerNavigate = (targetCardId) => {
-        setDrawerCardId(null);
-        useCardStore.setState({ selectedCardId: targetCardId });
     };
 
     // 取得連結到的卡片
@@ -559,13 +562,7 @@ const CardEditor = ({ cardId }) => {
                 </div>
             </div>
 
-            {/* Drawer for card preview */}
-            <CardDrawer
-                cardId={drawerCardId}
-                open={!!drawerCardId}
-                onOpenChange={(open) => !open && setDrawerCardId(null)}
-                onNavigate={handleDrawerNavigate}
-            />
+
         </div>
     );
 };
