@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Link2, Tag } from 'lucide-react';
 import { useCardStore } from '@/store/useCardStore';
@@ -8,45 +8,9 @@ import NodeToolbar from './NodeToolbar';
 
 const CardNode = ({ data, selected, id }) => {
     const { title, summary, tags, color, linkCount } = data;
-    const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [editedTitle, setEditedTitle] = useState(title);
-    const titleInputRef = useRef(null);
     const updateCard = useCardStore(state => state.updateCard);
     const deleteCard = useCardStore(state => state.deleteCard);
     const setCardToDelete = useCardStore(state => state.setCardToDelete);
-
-    // 當進入編輯模式時，自動聚焦
-    useEffect(() => {
-        if (isEditingTitle && titleInputRef.current) {
-            titleInputRef.current.focus();
-            titleInputRef.current.select();
-        }
-    }, [isEditingTitle]);
-
-    const handleTitleClick = (e) => {
-        e.stopPropagation();
-        setIsEditingTitle(true);
-    };
-
-    const handleTitleBlur = () => {
-        setIsEditingTitle(false);
-        if (editedTitle.trim() && editedTitle !== title) {
-            updateCard(id, { title: editedTitle.trim() });
-        } else if (!editedTitle.trim()) {
-            setEditedTitle(title); // 恢復原標題
-        }
-    };
-
-    const handleTitleKeyDown = (e) => {
-        // 只處理 Escape，移除 Enter 保存
-        if (e.key === 'Escape') {
-            setEditedTitle(title);
-            setIsEditingTitle(false);
-        } else if (e.key === 's' && e.ctrlKey) {
-            e.preventDefault();
-            handleTitleBlur();
-        }
-    };
 
     // Toolbar 處理函數
     const handleDelete = () => {
@@ -57,12 +21,12 @@ const CardNode = ({ data, selected, id }) => {
         <div
             className={`
                 group relative min-w-[240px] max-w-[280px] 
-                bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm
-                border border-gray-200/60 dark:border-gray-700/60
-                rounded shadow-sm
+                bg-white dark:bg-slate-800
+                border border-gray-200/60 dark:border-slate-600/60
+                rounded-lg shadow-sm
                 transition-all duration-200
                 hover:shadow-lg hover:-translate-y-0.5
-                ${selected ? 'ring-2 ring-blue-400 dark:ring-blue-500 shadow-lg' : ''}
+                ${selected ? 'shadow-lg' : ''}
             `}
         >
             {/* 迷你工具欄 */}
@@ -89,25 +53,9 @@ const CardNode = ({ data, selected, id }) => {
             <div className="p-4">
                 {/* 標題 - 可編輯 */}
                 <div className="mb-3">
-                    {isEditingTitle ? (
-                        <input
-                            ref={titleInputRef}
-                            type="text"
-                            value={editedTitle}
-                            onChange={(e) => setEditedTitle(e.target.value)}
-                            onBlur={handleTitleBlur}
-                            onKeyDown={handleTitleKeyDown}
-                            className="w-full font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-400 rounded px-1 -ml-1"
-                            placeholder="卡片標題..."
-                        />
-                    ) : (
-                        <h3
-                            onClick={handleTitleClick}
-                            className="font-semibold text-gray-900 dark:text-gray-100 leading-tight cursor-text hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded px-1 -ml-1 transition-colors"
-                        >
-                            {title}
-                        </h3>
-                    )}
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 leading-tight rounded px-1 -ml-1 transition-colors">
+                        {title}
+                    </h3>
                 </div>
 
                 {/* 摘要項目 */}

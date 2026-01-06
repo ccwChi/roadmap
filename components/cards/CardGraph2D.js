@@ -18,7 +18,7 @@ import { useTheme } from 'next-themes';
 import { Plus, Eye, EyeOff } from 'lucide-react';
 import { useCardStore } from '@/store/useCardStore';
 import CardNode from './CardNode';
-import CardModal from './CardModal';
+import ResizableCardSheet from './ResizableCardSheet';
 import CustomEdge from './CustomEdge';
 import {
     AlertDialog,
@@ -46,7 +46,7 @@ const edgeTypes = {
 const CardGraph2DInner = () => {
     const [mounted, setMounted] = useState(false);
     const { resolvedTheme } = useTheme();
-    const { fitView } = useReactFlow(); // ReactFlow hook for viewport control
+    const { fitView, setCenter, getZoom } = useReactFlow(); // ReactFlow hook for viewport control
 
     useEffect(() => {
         setMounted(true);
@@ -119,8 +119,9 @@ const CardGraph2DInner = () => {
         setEdges(getEdges());
     }, [cards, showHiddenLinks, setNodes, setEdges, getNodes, getEdges]);
 
-    // 聚焦到選中的卡片
-    useEffect(() => {
+    // 聚焦到選中的卡片 - 已停用，改用 handleCardFocus 來處理
+    // 這個 useEffect 會將卡片居中到整個螢幕，與新的「居中到左側空間」功能衝突
+    /* useEffect(() => {
         if (selectedCardId && nodes.length > 0) {
             const targetNode = nodes.find(n => n.id === selectedCardId);
             if (targetNode) {
@@ -132,7 +133,7 @@ const CardGraph2DInner = () => {
                 });
             }
         }
-    }, [selectedCardId, nodes, fitView]);
+    }, [selectedCardId, nodes, fitView]); */
 
     // 節點點擊
     const onNodeClick = useCallback((event, node) => {
@@ -174,15 +175,42 @@ const CardGraph2DInner = () => {
         setTimeout(() => useCardStore.setState({ selectedCardId: newCardId }), 100);
     }, [addCard]);
 
-    // 關閉 Modal
-    const handleCloseModal = useCallback(() => {
+    // 關閉 Sheet
+    const handleCloseSheet = useCallback(() => {
         useCardStore.setState({ selectedCardId: null });
     }, []);
 
-    // 從 Modal 中點擊其他卡片
-    const handleCardClick = useCallback((cardId) => {
-        useCardStore.setState({ selectedCardId: cardId });
-    }, []);
+    // 聚焦到卡片（當在 Sheet 中切換 tab 時）
+    // sheetWidthPercent: Sheet 的寬度百分比（例如 50 表示 50%）
+    const handleCardFocus = useCallback((cardId, sheetWidthPercent = 50) => {
+        if (cardId && nodes.length > 0) {
+            const targetNode = nodes.find(n => n.id === cardId);
+            if (targetNode) {
+                // 計算左側可用空間的寬度
+                const viewportWidth = window.innerWidth;
+                const leftSpaceRatio = (100 - sheetWidthPercent) / 100;
+                const leftSpaceWidth = viewportWidth * leftSpaceRatio;
+
+                // 計算左側空間的中心點（在視窗座標系中）
+                const centerXInViewport = leftSpaceWidth / 2;
+
+                // 獲取當前縮放比例
+                const currentZoom = getZoom();
+
+                // 計算節點在左側空間中心時的座標
+                // setCenter 需要的是節點的實際座標
+                const nodeX = targetNode.position.x;
+                const nodeY = targetNode.position.y;
+
+                // 計算偏移量：左側空間中心相對於整個視窗中心的偏移
+                const viewportCenterX = viewportWidth / 2;
+                const offsetX = (centerXInViewport - viewportCenterX) / currentZoom;
+
+                // 使用 setCenter 移動視圖，帶動畫
+                setCenter(nodeX - offsetX, nodeY, { zoom: currentZoom, duration: 300 });
+            }
+        }
+    }, [nodes, getZoom, setCenter]);
 
     // 主題相關顏色
     const isDark = mounted ? (resolvedTheme === 'dark') : true;
@@ -229,6 +257,15 @@ const CardGraph2DInner = () => {
                     onNodeClick={onNodeClick}
                     onNodeDragStop={onNodeDragStop}
                     onConnect={onConnect}
+                    onPaneClick={() => {
+                        // 點擊空白區域時，只在沒有打開 Sheet 的情況下清除選中狀態
+                        if (!selectedCardId) {
+                            // 如果沒有選中的卡片，不做任何事
+                            return;
+                        }
+                        // 注意：這裡我們不清除 selectedCardId，因為這會影響 Sheet
+                        // ring 效果會在點擊其他節點或關閉 Sheet 時自然消失
+                    }}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     fitView
@@ -311,14 +348,12 @@ const CardGraph2DInner = () => {
                 </div> */}
             </div>
 
-            {/* 卡片 Modal */}
-            {selectedCardId && (
-                <CardModal
-                    cardId={selectedCardId}
-                    onClose={handleCloseModal}
-                    onCardClick={handleCardClick}
-                />
-            )}
+            {/* 卡片編輯 Sheet */}
+            <ResizableCardSheet
+                open={!!selectedCardId}
+                onClose={handleCloseSheet}
+                onCardFocus={handleCardFocus}
+            />
 
             {/* 刪除確認對話框 */}
             <AlertDialog open={!!cardToDelete} onOpenChange={(open) => !open && setCardToDelete(null)}>

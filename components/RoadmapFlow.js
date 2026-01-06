@@ -93,7 +93,7 @@ export default function RoadmapFlow() {
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
           nodesDraggable={!isLocked}
-          fitView
+          // fitView
           minZoom={0.3}
           maxZoom={2}
           defaultEdgeOptions={{
@@ -126,11 +126,10 @@ export default function RoadmapFlow() {
         <div className="absolute bottom-6 right-6 z-10 flex gap-2">
           <button
             onClick={() => setIsLocked(!isLocked)}
-            className={`p-3 rounded-lg border shadow-lg transition-colors ${
-              isLocked
+            className={`p-3 rounded-lg border shadow-lg transition-colors ${isLocked
                 ? 'bg-card border-border hover:bg-secondary'
                 : 'bg-orange-500/20 border-orange-500 text-orange-500'
-            }`}
+              }`}
             title={isLocked ? '解鎖編輯' : '鎖定編輯'}
           >
             {isLocked ? (

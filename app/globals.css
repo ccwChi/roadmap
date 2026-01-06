@@ -123,3 +123,92 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Rich Text Editor Styles */
+@layer components {
+  /* Card link styling in editor */
+  .card-link {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-sm font-medium transition-colors cursor-pointer;
+  }
+
+  .card-link::before {
+    content: '';
+    @apply text-xs;
+  }
+
+  /* Placeholder for empty contentEditable */
+  [contenteditable]:empty:before {
+    content: attr(data-placeholder);
+    @apply text-muted-foreground italic;
+    pointer-events: none;
+  }
+
+  /* Focus styles for contentEditable */
+  [contenteditable]:focus {
+    @apply outline-none;
+  }
+
+  /* Basic formatting in editor */
+  [contenteditable] strong {
+    @apply font-bold;
+  }
+
+  [contenteditable] em {
+    @apply italic;
+  }
+
+  [contenteditable] code {
+    @apply px-1.5 py-0.5 rounded bg-muted text-sm font-mono;
+  }
+}
+
+/* Card Link Tag Styles */
+.card-link-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  margin: 0 0.125rem;
+  background-color: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.card-link-tag:hover {
+  background-color: hsl(var(--primary) / 0.2);
+}
+
+.card-link-tag::before {
+  content: '';
+  font-size: 0.75rem;
+}
+
+/* Card Link Inline Styles (for preview mode) */
+.card-link-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  margin: 0 0.125rem;
+  background-color: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.card-link-inline:hover {
+  background-color: hsl(var(--primary) / 0.2);
+}
+
+.card-link-inline::before {
+  content: '';
+  font-size: 0.75rem;
+}
