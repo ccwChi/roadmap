@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
         <meta name="description" content="互動式 AI 學習路線圖，支援進度追蹤、筆記功能與 Google Drive 同步" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <meta name="theme-color" content="#3b82f6" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/manifest.json`} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="AI Roadmap" />

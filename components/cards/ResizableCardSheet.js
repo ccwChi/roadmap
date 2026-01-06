@@ -152,6 +152,19 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
 
 
 
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // ... (existing code for drag handlers) ...
+
     if (!open || openTabs.length === 0) return null;
 
     return (
@@ -171,17 +184,19 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
             <div
                 ref={sheetRef}
                 className="fixed top-0 right-0 h-screen bg-background border-l border-border shadow-2xl z-50 flex flex-col"
-                style={{ width: `${width}%` }}
+                style={{ width: isMobile ? '100%' : `${width}%` }}
             >
-                {/* 拖拽手柄 */}
-                <div
-                    className="absolute left-0 top-0 bottom-0 w-1 hover:w-2 bg-border hover:bg-primary cursor-col-resize transition-all group z-10"
-                    onMouseDown={handleDragStart}
-                >
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical className="w-4 h-4 text-primary" />
+                {/* 拖拽手柄 - 手機版不顯示 */}
+                {!isMobile && (
+                    <div
+                        className="absolute left-0 top-0 bottom-0 w-1 hover:w-2 bg-border hover:bg-primary cursor-col-resize transition-all group z-10"
+                        onMouseDown={handleDragStart}
+                    >
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <GripVertical className="w-4 h-4 text-primary" />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Tab 欄 */}
                 <div className="flex items-center border-b border-border bg-muted/30 overflow-x-auto flex-shrink-0">
