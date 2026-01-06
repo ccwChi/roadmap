@@ -35,18 +35,60 @@ const CardNode = ({ data, selected, id }) => {
                 onDelete={handleDelete}
             />
 
+            {/* 連接點 - 上 */}
+            <Handle
+                type="target"
+                position={Position.Top}
+                id="top-target"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+            <Handle
+                type="source"
+                position={Position.Top}
+                id="top-source"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+
             {/* 連接點 - 左 */}
             <Handle
                 type="target"
                 position={Position.Left}
-                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                id="left-target"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+            <Handle
+                type="source"
+                position={Position.Left}
+                id="left-source"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
             />
 
             {/* 連接點 - 右 */}
             <Handle
+                type="target"
+                position={Position.Right}
+                id="right-target"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+            <Handle
                 type="source"
                 position={Position.Right}
-                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                id="right-source"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+
+            {/* 連接點 - 下 */}
+            <Handle
+                type="target"
+                position={Position.Bottom}
+                id="bottom-target"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            />
+            <Handle
+                type="source"
+                position={Position.Bottom}
+                id="bottom-source"
+                className="w-3 h-3 !bg-blue-500 border-2 border-white dark:border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity z-10"
             />
 
             {/* 卡片內容 */}

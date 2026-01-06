@@ -153,6 +153,8 @@ const CardGraph2DInner = () => {
     const onConnect = useCallback((connection) => {
         addLink(connection.source, connection.target, {
             type: 'reference',
+            sourceHandle: connection.sourceHandle,
+            targetHandle: connection.targetHandle
             // 不設置默認 label，讓用戶需要時再添加
         });
     }, [addLink]);
@@ -274,6 +276,8 @@ const CardGraph2DInner = () => {
                     deleteKeyCode="Delete"
                     edgesReconnectable={false}
                     edgesFocusable={true}
+                    snapToGrid={true}
+                    snapGrid={[15, 15]}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
                         animated: true,

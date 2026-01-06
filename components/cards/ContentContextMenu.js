@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link2, Search, ExternalLink, FileText, Scissors } from 'lucide-react';
+import { Link2, Search, ExternalLink, FileText, Scissors, Eraser } from 'lucide-react';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -30,7 +30,10 @@ const ContentContextMenu = ({
     onCreateCardFromSelection,
     currentCardId,
     onOpenChange,
-    textareaRef
+    textareaRef,
+    onSetSummary,
+    onClearSummary,
+    hasSummary
 }) => {
     const cards = useCardStore(state => state.cards);
     const addCard = useCardStore(state => state.addCard);
@@ -45,6 +48,20 @@ const ContentContextMenu = ({
             card.title.toLowerCase().includes(searchQuery.toLowerCase())
         )
         .slice(0, 10);
+
+    const handleSetSummary = () => {
+        if (!textareaRef?.current) return;
+
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+
+        if (!selectedText.trim()) return;
+
+        // 調用父組件的回調來設置摘要
+        onSetSummary?.(selectedText.trim());
+    };
 
     const handleInsertLink = (targetCard) => {
         // 檢查是否有選取文字
@@ -156,6 +173,29 @@ const ContentContextMenu = ({
                     {children}
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-64">
+                    {/* 將選取文字設為摘要 */}
+                    <ContextMenuItem
+                        onClick={handleSetSummary}
+                        className="cursor-pointer"
+                        disabled={!hasSelection()}
+                    >
+                        <FileText className="w-4 h-4 mr-2" />
+                        將選取文字設為摘要
+                    </ContextMenuItem>
+
+                    {/* 清空摘要 - 僅在已設定摘要時顯示 */}
+                    {hasSummary && (
+                        <ContextMenuItem
+                            onClick={onClearSummary}
+                            className="cursor-pointer text-red-500 hover:text-red-600 focus:text-red-600"
+                        >
+                            <Eraser className="w-4 h-4 mr-2" />
+                            清空摘要
+                        </ContextMenuItem>
+                    )}
+
+                    <ContextMenuSeparator />
+
                     {/* 從選取內容建立新卡片 */}
                     <ContextMenuItem
                         onClick={handleCreateCardFromSelection}

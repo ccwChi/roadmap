@@ -321,7 +321,9 @@ export const useCardStore = create(
                     targetId,
                     type: linkData.type || 'reference',
                     label: linkData.label || '',
-                    isHidden: linkData.isHidden || false
+                    isHidden: linkData.isHidden || false,
+                    sourceHandle: linkData.sourceHandle,
+                    targetHandle: linkData.targetHandle
                 };
 
                 set(state => ({
@@ -732,6 +734,8 @@ export const useCardStore = create(
                                 id: `${card.id}-${link.targetId}-${index}`,
                                 source: card.id,
                                 target: link.targetId,
+                                sourceHandle: link.sourceHandle,
+                                targetHandle: link.targetHandle,
                                 type: link.edgeType || 'smoothstep', // 支持自定義邊類型
                                 animated: link.animated !== false, // 默認動畫
                                 label: link.label, // 連線標籤

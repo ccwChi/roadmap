@@ -32,6 +32,7 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
     const updateCard = useCardStore(state => state.updateCard);
     const updateCardContent = useCardStore(state => state.updateCardContent);
     const deleteCard = useCardStore(state => state.deleteCard);
+    const addLink = useCardStore(state => state.addLink);
 
     // 追蹤上一次聚焦的卡片 ID，避免重複聚焦
     const lastFocusedCardRef = useRef(null);
@@ -264,13 +265,13 @@ const CardEditor = ({ cardId }) => {
     const updateCard = useCardStore(state => state.updateCard);
     const updateCardContent = useCardStore(state => state.updateCardContent);
     const deleteCard = useCardStore(state => state.deleteCard);
+    const addLink = useCardStore(state => state.addLink);
 
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [isEditingContent, setIsEditingContent] = useState(false);
     const [editContent, setEditContent] = useState('');
     const [editTitle, setEditTitle] = useState('');
-    const [isEditingSummary, setIsEditingSummary] = useState(false);
-    const [editSummaryText, setEditSummaryText] = useState('');
+
     const [newTagInput, setNewTagInput] = useState('');
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
 
@@ -280,7 +281,6 @@ const CardEditor = ({ cardId }) => {
     useEffect(() => {
         if (card) {
             setEditTitle(card.title);
-            setEditSummaryText(card.summary ? card.summary.join('\n') : '');
         }
         if (content !== undefined) {
             setEditContent(content);
@@ -304,20 +304,7 @@ const CardEditor = ({ cardId }) => {
         setIsEditingContent(false);
     };
 
-    const saveSummary = () => {
-        const newSummary = editSummaryText
-            .split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
 
-        const currentSummaryJSON = JSON.stringify(card.summary || []);
-        const newSummaryJSON = JSON.stringify(newSummary);
-
-        if (currentSummaryJSON !== newSummaryJSON) {
-            updateCard(cardId, { summary: newSummary });
-        }
-        setIsEditingSummary(false);
-    };
 
     const addTag = () => {
         const trimmedTag = newTagInput.trim();
@@ -354,13 +341,41 @@ const CardEditor = ({ cardId }) => {
     const handleCreateCardFromSelection = (start, end, linkText, newCardId) => {
         const newContent = editContent.substring(0, start) + linkText + editContent.substring(end);
         setEditContent(newContent);
+
+        // 自動建立連結：當前卡片 -> 新卡片
+        addLink(cardId, newCardId, {
+            sourceHandle: 'bottom-source',
+            targetHandle: 'top-target'
+        });
+
         // 直接在 Sheet 中切換到新卡片（添加新 tab）
+        // 這裡應該會自動聚焦，因為 selectedCardId 改變了
         useCardStore.setState({ selectedCardId: newCardId });
     };
 
     const handleCardLinkClick = (linkedCardId) => {
         // 直接切換到該卡片（會添加新 tab）
         useCardStore.setState({ selectedCardId: linkedCardId });
+    };
+
+    const handleSetSummary = (text) => {
+        // 清理卡片連結語法
+        // 1. 將 [[card:id|顯示文字]] 替換為 顯示文字
+        let cleanText = text.replace(/\[\[card:[^|\]]+\|([^\]]+)\]\]/g, '$1');
+        // 2. 將 [[card:id]] 移除（因為在摘要中顯示 ID 無意義）
+        cleanText = cleanText.replace(/\[\[card:[^\]]+\]\]/g, '');
+
+        // 將選取的文字分割成陣列（按換行符）
+        const newSummary = cleanText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        updateCard(cardId, { summary: newSummary });
+    };
+
+    const handleClearSummary = () => {
+        updateCard(cardId, { summary: [] });
     };
 
     // 取得連結到的卡片
@@ -387,13 +402,13 @@ const CardEditor = ({ cardId }) => {
                             onChange={(e) => setEditTitle(e.target.value)}
                             onBlur={saveTitle}
                             onKeyDown={(e) => e.key === 'Enter' && saveTitle()}
-                            className="w-full text-2xl font-bold bg-transparent border-b-4 border-primary/40 focus:border-primary outline-none px-1 py-2"
+                            className="w-full text-2xl font-bold bg-transparent focus:border-primary outline-none px-1 py-2"
                             placeholder="卡片標題"
                             autoFocus
                         />
                     ) : (
                         <h2
-                            className="text-2xl font-bold cursor-text border-b-4 border-primary/30 hover:border-primary/50 px-1 py-2 transition-colors"
+                            className="text-2xl font-bold cursor-text hover:border-primary/50 px-1 py-2 transition-colors"
                             onClick={() => setIsEditingTitle(true)}
                         >
                             {card.title}
@@ -441,41 +456,8 @@ const CardEditor = ({ cardId }) => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* 摘要 */}
-                <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">摘要</h3>
-                    {isEditingSummary ? (
-                        <textarea
-                            value={editSummaryText}
-                            onChange={(e) => setEditSummaryText(e.target.value)}
-                            onBlur={saveSummary}
-                            className="w-full min-h-[100px] p-4 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-primary rounded-xl outline-none text-sm resize-y transition-colors"
-                            placeholder="輸入摘要內容，每一行將作為一個重點顯示在卡片上..."
-                            autoFocus
-                        />
-                    ) : (
-                        <div
-                            className="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded-xl min-h-[80px] cursor-text transition-all whitespace-pre-wrap text-sm"
-                            onClick={() => setIsEditingSummary(true)}
-                        >
-                            {card.summary && card.summary.length > 0 ? (
-                                <ul className="space-y-1">
-                                    {card.summary.map((item, idx) => (
-                                        <li key={idx} className="flex items-start gap-2">
-                                            <span className="text-primary mt-1">•</span>
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-muted-foreground italic">點擊輸入摘要...</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* 內容 */}
-                <div className="space-y-2 flex-1 flex flex-col">
+                {/* 內容區域 */}
+                <div className="space-y-2 flex-1 flex flex-col min-h-0">
                     <h3 className="text-sm font-medium text-muted-foreground">內容</h3>
                     {isEditingContent ? (
                         <ContentContextMenu
@@ -484,6 +466,9 @@ const CardEditor = ({ cardId }) => {
                             onOpenChange={setIsContextMenuOpen}
                             onCreateCardFromSelection={handleCreateCardFromSelection}
                             textareaRef={contentTextareaRef}
+                            onSetSummary={handleSetSummary}
+                            onClearSummary={handleClearSummary}
+                            hasSummary={card.summary && card.summary.length > 0}
                         >
                             <textarea
                                 ref={contentTextareaRef}
@@ -511,6 +496,7 @@ const CardEditor = ({ cardId }) => {
                         </div>
                     )}
                 </div>
+
 
                 {/* 連結資訊 */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
@@ -560,10 +546,10 @@ const CardEditor = ({ cardId }) => {
                         )}
                     </div>
                 </div>
-            </div>
+            </div >
 
 
-        </div>
+        </div >
     );
 };
 
