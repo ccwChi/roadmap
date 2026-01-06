@@ -69,6 +69,7 @@ export default function Header() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [googleInitError, setGoogleInitError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [syncConflict, setSyncConflict] = useState(null);
 
@@ -96,6 +97,7 @@ export default function Header() {
         }
       } catch (error) {
         console.error('在roadmap頁面，Google API 初始化失敗:', error);
+        setGoogleInitError(true);
       }
     };
     initGoogle();
@@ -124,8 +126,12 @@ export default function Header() {
         throw new Error('登入後無法取得 Token');
       }
     } catch (error) {
-      console.error('登入失敗:', error);
-      toast.error('登入失敗', { description: '請確認網路狀態或稍後再試' });
+      if (error.code === 'cancelled' || error.message?.includes('closed by user')) {
+        console.log('使用者取消登入');
+      } else {
+        console.error('登入失敗:', error);
+        toast.error('登入失敗', { description: '請確認網路狀態或稍後再試' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -449,18 +455,26 @@ export default function Header() {
               </DropdownMenu>
             ) : (
               <button
-                onClick={handleSignIn}
-                disabled={!isGoogleReady || isLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                onClick={isLoading ? () => setIsLoading(false) : handleSignIn}
+                disabled={!isGoogleReady}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isLoading
+                  ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  } disabled:opacity-50`}
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">取消</span>
+                  </>
                 ) : (
-                  <LogIn className="w-4 h-4" />
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">
+                      {isGoogleReady ? '登入' : (googleInitError ? '僅限離線模式' : '設定中...')}
+                    </span>
+                  </>
                 )}
-                <span className="hidden sm:inline">
-                  {!isGoogleReady ? '設定中...' : '登入'}
-                </span>
               </button>
             )}
           </div>

@@ -116,7 +116,7 @@ export default function Sidebar() {
 
   return (
     <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <SheetContent side="left" className="w-80 max-w-full overflow-y-auto">
+      <SheetContent side="left" className="w-80 max-w-full overflow-y-auto p-4">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Map className="w-5 h-5 text-primary" />
