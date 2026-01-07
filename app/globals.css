@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -126,6 +127,7 @@
 
 /* Rich Text Editor Styles */
 @layer components {
+
   /* Card link styling in editor */
   .card-link {
     @apply inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-sm font-medium transition-colors cursor-pointer;
@@ -215,10 +217,44 @@
 
 /* Hide scrollbar utility */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
+}
+
+/* CRT Turn Off Animation */
+@keyframes crt-turn-off {
+  0% {
+    transform: scale(1, 1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+
+  40% {
+    transform: scale(1, 0.002);
+    opacity: 1;
+    filter: brightness(2);
+  }
+
+  80% {
+    transform: scale(0, 0.002);
+    opacity: 1;
+    filter: brightness(5);
+  }
+
+  100% {
+    transform: scale(0, 0);
+    opacity: 0;
+  }
+}
+
+.animate-crt-off {
+  animation: crt-turn-off 0.3s ease-out forwards;
+  transform-origin: center center;
 }
