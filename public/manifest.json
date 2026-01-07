@@ -1,7 +1,7 @@
 {
-  "name": "AI Roadmap - 學習路線圖",
-  "short_name": "AI Roadmap",
-  "description": "互動式 AI 學習路線圖，支援進度追蹤、筆記功能與 Google Drive 同步",
+  "name": "Map Note",
+  "short_name": "Map Note",
+  "description": "隨手記記",
   "start_url": "/roadmap/",
   "scope": "/roadmap/",
   "id": "/roadmap/",
