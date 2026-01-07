@@ -264,7 +264,7 @@ export default function Sidebar() {
           </div>
 
           {/* 學習路徑區塊 (未來功能) */}
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <button
               className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-secondary transition-colors opacity-50 cursor-not-allowed"
               disabled
@@ -273,10 +273,10 @@ export default function Sidebar() {
               <span className="font-medium">學習路徑</span>
               <span className="text-xs text-muted-foreground">(即將推出)</span>
             </button>
-          </div>
+          </div> */}
 
           {/* 音樂設定區塊 (未來功能) */}
-          <div>
+          {/* <div>
             <button
               className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-secondary transition-colors opacity-50 cursor-not-allowed"
               disabled
@@ -285,7 +285,7 @@ export default function Sidebar() {
               <span className="font-medium">音樂設定</span>
               <span className="text-xs text-muted-foreground">(即將推出)</span>
             </button>
-          </div>
+          </div> */}
 
           {/* 分隔線 */}
           <div className="my-4 border-t border-border" />
