@@ -5,7 +5,7 @@ import { Trash2 } from 'lucide-react';
 
 const NodeToolbar = ({ nodeId, onDelete }) => {
     return (
-        <div className="absolute -top-12 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto">
+        <div className="absolute -top-12 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto md:pointer-events-none md:group-hover:pointer-events-auto z-50">
             {/* 刪除 */}
             <button
                 onClick={(e) => {
