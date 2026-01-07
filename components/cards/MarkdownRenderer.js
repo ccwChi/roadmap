@@ -2,6 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { useCardStore } from '@/store/useCardStore';
 
 const MarkdownRenderer = ({ content, onCardClick }) => {
@@ -30,9 +31,9 @@ const MarkdownRenderer = ({ content, onCardClick }) => {
     );
 
     return (
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none" style={{ whiteSpace: 'pre-wrap' }}>
             <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
                     // 自訂連結渲染
                     a: ({ href, children, ...props }) => {
@@ -97,19 +98,26 @@ const MarkdownRenderer = ({ content, onCardClick }) => {
 
                     // 標題
                     h1: ({ children, ...props }) => (
-                        <h1 className="text-2xl font-bold mt-6 mb-4" {...props}>
+                        <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0" {...props}>
                             {children}
                         </h1>
                     ),
                     h2: ({ children, ...props }) => (
-                        <h2 className="text-xl font-bold mt-5 mb-3" {...props}>
+                        <h2 className="text-2xl font-bold mt-6 mb-3" {...props}>
                             {children}
                         </h2>
                     ),
                     h3: ({ children, ...props }) => (
-                        <h3 className="text-lg font-semibold mt-4 mb-2" {...props}>
+                        <h3 className="text-xl font-semibold mt-5 mb-2" {...props}>
                             {children}
                         </h3>
+                    ),
+
+                    // 段落 - 保留空白
+                    p: ({ children, ...props }) => (
+                        <p className="my-3" style={{ whiteSpace: 'pre-wrap' }} {...props}>
+                            {children}
+                        </p>
                     ),
 
                     // 清單
@@ -152,6 +160,9 @@ const MarkdownRenderer = ({ content, onCardClick }) => {
                             {children}
                         </td>
                     ),
+
+                    // 換行
+                    br: () => <br />,
                 }}
             >
                 {processedContent}

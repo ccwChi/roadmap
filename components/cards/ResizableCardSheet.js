@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, GripVertical, Tag as TagIcon, Plus, Link2, Trash2, Pin, PinOff } from 'lucide-react';
+import { X, GripVertical, Tag as TagIcon, Plus, Pin, PinOff } from 'lucide-react';
 import { useCardStore } from '@/store/useCardStore';
 import MarkdownRenderer from './MarkdownRenderer';
 import ContentContextMenu from './ContentContextMenu';
@@ -15,7 +15,7 @@ import CardDrawer from './CardDrawer';
  * - 支持釘選功能：釘選時點擊背景不會關閉
  */
 const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
-    const [width, setWidth] = useState(50); // 百分比
+    const [width, setWidth] = useState(75); // 百分比
     const [isDragging, setIsDragging] = useState(false);
     const [openTabs, setOpenTabs] = useState([]); // [cardId1, cardId2, ...]
     const [activeTab, setActiveTab] = useState(null);
@@ -198,7 +198,7 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
                     </div>
                 )}
 
-                {/* Tab 欄 */}
+                {/* Tab 欄 - 在最上方 */}
                 <div className="flex items-center border-b border-border bg-muted/30 overflow-x-auto flex-shrink-0">
                     <div className="flex-1 flex items-center overflow-x-auto">
                         {openTabs.map((cardId) => {
@@ -271,7 +271,7 @@ const ResizableCardSheet = ({ open, onClose, onCardFocus }) => {
 };
 
 /**
- * 單個卡片的編輯器組件
+ * 單個卡片的編輯器組件 - Notion 風格
  */
 const CardEditor = ({ cardId }) => {
     const card = useCardStore(state => state.cards[cardId]);
@@ -279,47 +279,79 @@ const CardEditor = ({ cardId }) => {
     const cards = useCardStore(state => state.cards);
     const updateCard = useCardStore(state => state.updateCard);
     const updateCardContent = useCardStore(state => state.updateCardContent);
-    const deleteCard = useCardStore(state => state.deleteCard);
     const addLink = useCardStore(state => state.addLink);
 
-    const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [isEditingContent, setIsEditingContent] = useState(false);
     const [editContent, setEditContent] = useState('');
-    const [editTitle, setEditTitle] = useState('');
-
+    const [isEditing, setIsEditing] = useState(false);
     const [newTagInput, setNewTagInput] = useState('');
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-
+    const [showTagInput, setShowTagInput] = useState(false);
 
     const contentTextareaRef = useRef(null);
 
+    // 初始化內容：確保第一行是 H1 標題
     useEffect(() => {
-        if (card) {
-            setEditTitle(card.title);
-        }
         if (content !== undefined) {
-            setEditContent(content);
+            const lines = content.split('\n');
+            const firstLine = lines[0] || '';
+
+            // 如果第一行不是 H1，自動添加
+            if (!firstLine.startsWith('# ')) {
+                const titleLine = `# ${card?.title || '未命名'}`;
+                const restContent = content || '';
+                setEditContent(restContent ? `${titleLine}\n\n${restContent}` : titleLine);
+            } else {
+                setEditContent(content);
+            }
+        } else if (card) {
+            // 新卡片，初始化為 H1 標題
+            setEditContent(`# ${card.title || '未命名'}`);
         }
     }, [card, content]);
 
     if (!card) return null;
 
-    const saveTitle = () => {
-        if (editTitle.trim() !== card.title) {
-            updateCard(cardId, { title: editTitle });
-        }
-        setIsEditingTitle(false);
-    };
-
+    // 儲存內容並自動提取標題
     const saveContent = () => {
         if (isContextMenuOpen) return;
+
+        const lines = editContent.split('\n');
+        const firstLine = lines[0] || '';
+
+        // 提取第一行的 H1 作為標題
+        if (firstLine.startsWith('# ')) {
+            const newTitle = firstLine.substring(2).trim();
+            if (newTitle && newTitle !== card.title) {
+                updateCard(cardId, { title: newTitle });
+            }
+        }
+
+        // 儲存完整內容（包含 H1）
         if (editContent !== content) {
             updateCardContent(cardId, editContent);
         }
-        setIsEditingContent(false);
+
+        setIsEditing(false);
     };
 
+    // 處理內容變更
+    const handleContentChange = (e) => {
+        const newContent = e.target.value;
+        const lines = newContent.split('\n');
+        const firstLine = lines[0] || '';
 
+        // 確保第一行始終是 H1
+        if (lines.length > 0 && !firstLine.startsWith('# ')) {
+            // 如果用戶刪除了 #，自動補回
+            if (firstLine.length > 0) {
+                const correctedContent = `# ${firstLine}\n${lines.slice(1).join('\n')}`;
+                setEditContent(correctedContent);
+                return;
+            }
+        }
+
+        setEditContent(newContent);
+    };
 
     const addTag = () => {
         const trimmedTag = newTagInput.trim();
@@ -327,6 +359,7 @@ const CardEditor = ({ cardId }) => {
             const newTags = [...(card.tags || []), trimmedTag];
             updateCard(cardId, { tags: newTags });
             setNewTagInput('');
+            setShowTagInput(false);
         }
     };
 
@@ -349,7 +382,7 @@ const CardEditor = ({ cardId }) => {
             }, 0);
         } else {
             setEditContent(prev => prev + '\n' + linkText);
-            setIsEditingContent(true);
+            setIsEditing(true);
         }
     };
 
@@ -357,30 +390,22 @@ const CardEditor = ({ cardId }) => {
         const newContent = editContent.substring(0, start) + linkText + editContent.substring(end);
         setEditContent(newContent);
 
-        // 自動建立連結：當前卡片 -> 新卡片
         addLink(cardId, newCardId, {
             sourceHandle: 'bottom-source',
             targetHandle: 'top-target'
         });
 
-        // 直接在 Sheet 中切換到新卡片（添加新 tab）
-        // 這裡應該會自動聚焦，因為 selectedCardId 改變了
         useCardStore.setState({ selectedCardId: newCardId });
     };
 
     const handleCardLinkClick = (linkedCardId) => {
-        // 直接切換到該卡片（會添加新 tab）
         useCardStore.setState({ selectedCardId: linkedCardId });
     };
 
     const handleSetSummary = (text) => {
-        // 清理卡片連結語法
-        // 1. 將 [[card:id|顯示文字]] 替換為 顯示文字
         let cleanText = text.replace(/\[\[card:[^|\]]+\|([^\]]+)\]\]/g, '$1');
-        // 2. 將 [[card:id]] 移除（因為在摘要中顯示 ID 無意義）
         cleanText = cleanText.replace(/\[\[card:[^\]]+\]\]/g, '');
 
-        // 將選取的文字分割成陣列（按換行符）
         const newSummary = cleanText
             .split('\n')
             .map(line => line.trim())
@@ -393,88 +418,27 @@ const CardEditor = ({ cardId }) => {
         updateCard(cardId, { summary: [] });
     };
 
-    // 取得連結到的卡片
-    const linkedCards = card.links
-        .filter(link => !link.isHidden)
-        .map(link => cards[link.targetId])
-        .filter(Boolean);
-
-    // 取得被連結的卡片
-    const backlinks = Object.values(cards).filter(c =>
-        c.links.some(link => link.targetId === cardId)
-    );
-
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="flex-shrink-0 p-6 border-b border-border">
-                {/* 標題 */}
-                <div className="mb-4">
-                    {isEditingTitle ? (
-                        <input
-                            type="text"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            onBlur={saveTitle}
-                            onKeyDown={(e) => e.key === 'Enter' && saveTitle()}
-                            className="w-full text-2xl font-bold bg-transparent focus:border-primary outline-none px-1 py-2"
-                            placeholder="卡片標題"
-                            autoFocus
-                        />
-                    ) : (
-                        <h2
-                            className="text-2xl font-bold cursor-text hover:border-primary/50 px-1 py-2 transition-colors"
-                            onClick={() => setIsEditingTitle(true)}
-                        >
-                            {card.title}
-                        </h2>
-                    )}
-                </div>
-
-                {/* Tags */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <TagIcon className="w-4 h-4 text-muted-foreground" />
-                    {card.tags && card.tags.map((tag, index) => (
-                        <span
-                            key={index}
-                            className="group/tag px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs rounded-full flex items-center gap-1 transition-colors"
-                        >
-                            {tag}
+            {/* 主要內容區域 - 佔據整個空間 */}
+            <div className="flex-1 overflow-y-auto">
+                {isEditing ? (
+                    <div className="h-full flex flex-col">
+                        {/* 編輯模式頂部工具列 */}
+                        <div className="flex-shrink-0 sticky top-0 bg-background/95 backdrop-blur border-b border-border px-6 py-2 flex items-center justify-between z-10">
+                            <div className="text-sm text-muted-foreground">
+                                編輯模式
+                            </div>
                             <button
-                                onClick={() => removeTag(tag)}
-                                className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 transition-opacity"
+                                onClick={saveContent}
+                                className="px-4 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
                             >
-                                <X className="w-3 h-3" />
+                                <span>✓ 完成編輯</span>
+                                <span className="text-xs opacity-70">(Esc)</span>
                             </button>
-                        </span>
-                    ))}
-                    <div className="flex items-center gap-1">
-                        <input
-                            type="text"
-                            value={newTagInput}
-                            onChange={(e) => setNewTagInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                            placeholder="新增標籤..."
-                            className="w-24 px-2 py-1 text-xs bg-transparent border border-dashed border-muted-foreground/30 hover:border-primary/50 focus:border-primary rounded-full outline-none transition-colors"
-                        />
-                        {newTagInput.trim() && (
-                            <button
-                                onClick={addTag}
-                                className="p-1 hover:bg-primary/10 rounded-full transition-colors"
-                            >
-                                <Plus className="w-3 h-3 text-primary" />
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
+                        </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* 內容區域 */}
-                <div className="space-y-2 flex-1 flex flex-col min-h-0">
-                    <h3 className="text-sm font-medium text-muted-foreground">內容</h3>
-                    {isEditingContent ? (
+                        {/* 編輯區域 */}
                         <ContentContextMenu
                             currentCardId={cardId}
                             onInsertLink={handleInsertLink}
@@ -488,83 +452,111 @@ const CardEditor = ({ cardId }) => {
                             <textarea
                                 ref={contentTextareaRef}
                                 value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                onBlur={saveContent}
-                                className="w-full flex-1 min-h-[300px] p-4 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-primary rounded-xl outline-none font-mono text-sm resize-none transition-colors"
-                                placeholder="支援 Markdown 格式&#10;&#10;右鍵可插入卡片連結或從選取建立新卡片"
+                                onChange={handleContentChange}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        saveContent();
+                                    }
+                                }}
+                                className="w-full flex-1 p-8 bg-transparent focus:outline-none font-mono text-sm resize-none"
+                                placeholder="# 標題&#10;&#10;在此輸入內容...&#10;&#10;💡 提示：&#10;- 按 Esc 或點擊「完成編輯」退出編輯模式&#10;- 第一行必須是 # 標題格式&#10;- 支援 Markdown 語法&#10;- 右鍵可插入卡片連結"
                                 autoFocus
+                                style={{ whiteSpace: 'pre-wrap' }}
                             />
                         </ContentContextMenu>
-                    ) : (
-                        <div
-                            className="p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded-xl min-h-[200px] cursor-text transition-all"
-                            onClick={() => setIsEditingContent(true)}
-                        >
-                            {content ? (
-                                <MarkdownRenderer
-                                    content={content}
-                                    onCardClick={handleCardLinkClick}
+                    </div>
+                ) : (
+                    <div
+                        className="p-8 min-h-full cursor-text hover:bg-muted/5 transition-colors relative group"
+                        onDoubleClick={() => setIsEditing(true)}
+                        style={{ whiteSpace: 'pre-wrap' }}
+                    >
+                        {/* 雙擊提示 */}
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="px-3 py-1.5 bg-muted/80 backdrop-blur rounded-md text-xs text-muted-foreground">
+                                雙擊編輯
+                            </div>
+                        </div>
+
+                        {content ? (
+                            <MarkdownRenderer
+                                content={content}
+                                onCardClick={handleCardLinkClick}
+                            />
+                        ) : (
+                            <div className="text-muted-foreground">
+                                <h1 className="text-3xl font-bold mb-4">{card.title}</h1>
+                                <p className="text-sm">雙擊此處開始編輯...</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* 底部工具列：Tags + 連結資訊 */}
+            <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur">
+                {/* Tags 區域 */}
+                <div className="px-6 py-3 border-b border-border">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <TagIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        {card.tags && card.tags.map((tag, index) => (
+                            <span
+                                key={index}
+                                className="group/tag px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs rounded-full flex items-center gap-1 transition-colors"
+                            >
+                                {tag}
+                                <button
+                                    onClick={() => removeTag(tag)}
+                                    className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 transition-opacity"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </span>
+                        ))}
+                        {showTagInput ? (
+                            <div className="flex items-center gap-1">
+                                <input
+                                    type="text"
+                                    value={newTagInput}
+                                    onChange={(e) => setNewTagInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            addTag();
+                                        } else if (e.key === 'Escape') {
+                                            setShowTagInput(false);
+                                            setNewTagInput('');
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        if (!newTagInput.trim()) {
+                                            setShowTagInput(false);
+                                        }
+                                    }}
+                                    placeholder="標籤名稱..."
+                                    className="w-24 px-2 py-1 text-xs bg-transparent border border-primary rounded-full outline-none"
+                                    autoFocus
                                 />
-                            ) : (
-                                <p className="text-muted-foreground text-sm">點擊此處開始編輯內容...</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-
-                {/* 連結資訊 */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-                    {/* 連結到 */}
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <Link2 className="w-4 h-4" />
-                            <span>連結到 ({linkedCards.length})</span>
-                        </div>
-                        {linkedCards.length > 0 ? (
-                            <div className="space-y-1">
-                                {linkedCards.map(linkedCard => (
-                                    <button
-                                        key={linkedCard.id}
-                                        onClick={() => useCardStore.setState({ selectedCardId: linkedCard.id })}
-                                        className="block w-full text-left px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm transition-colors"
-                                    >
-                                        {linkedCard.title}
-                                    </button>
-                                ))}
+                                <button
+                                    onClick={addTag}
+                                    className="p-1 hover:bg-primary/10 rounded-full transition-colors"
+                                >
+                                    <Plus className="w-3 h-3 text-primary" />
+                                </button>
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">無連結</p>
-                        )}
-                    </div>
-
-                    {/* 被連結 */}
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <Link2 className="w-4 h-4 rotate-180" />
-                            <span>被連結 ({backlinks.length})</span>
-                        </div>
-                        {backlinks.length > 0 ? (
-                            <div className="space-y-1">
-                                {backlinks.map(backlinkCard => (
-                                    <button
-                                        key={backlinkCard.id}
-                                        onClick={() => useCardStore.setState({ selectedCardId: backlinkCard.id })}
-                                        className="block w-full text-left px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-sm transition-colors"
-                                    >
-                                        {backlinkCard.title}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">無反向連結</p>
+                            <button
+                                onClick={() => setShowTagInput(true)}
+                                className="px-3 py-1 text-xs text-muted-foreground hover:text-primary border border-dashed border-muted-foreground/30 hover:border-primary rounded-full transition-colors"
+                            >
+                                + 新增標籤
+                            </button>
                         )}
                     </div>
                 </div>
-            </div >
-
-
-        </div >
+            </div>
+        </div>
     );
 };
 

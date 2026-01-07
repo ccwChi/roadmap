@@ -171,18 +171,22 @@ export default function Sidebar() {
                           switchProject(project.id);
                           toggleProject(project.id);
                         }}
-                        className="flex items-center gap-2 flex-1 cursor-pointer"
+                        className="flex items-center gap-2 flex-1 cursor-pointer min-w-0 overflow-x-auto scrollbar-hide"
+                        style={{
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                        }}
                       >
                         {isExpanded ? (
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className="w-4 h-4 flex-shrink-0" />
                         ) : (
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="w-4 h-4 flex-shrink-0" />
                         )}
-                        <span className="text-lg">{project.icon}</span>
-                        <span className="font-medium truncate">{project.name}</span>
-                        <span className="text-xs text-muted-foreground">({projectCards.length})</span>
+                        <span className="text-lg flex-shrink-0">{project.icon}</span>
+                        <span className="font-medium whitespace-nowrap">{project.name}</span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">({projectCards.length})</span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
