@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
   <diagram name="第 1 页" id="Rn_KkZb909j92Kv94zoD">
-    <mxGraphModel dx="3669" dy="648" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="4159" dy="914" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -281,8 +281,8 @@
         <mxCell id="Nxlct3h7_9rXwwGu6eUJ-85" edge="1" parent="1" source="G8DehN8Xk7uLqqQ89Hug-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Nxlct3h7_9rXwwGu6eUJ-66">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="G8DehN8Xk7uLqqQ89Hug-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;確認參數&lt;/span&gt;&lt;/div&gt;&lt;span style=&quot;text-align: left;&quot;&gt;畫面代入&quot;生產開始設定值&quot;，並以紅字顯示與資料來源對照差異&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;&lt;div&gt;如果RMS沒有標準值 ，則把目前的也設定為標準值，&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;，要求主管簽名，儲存。&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="94" width="343.87" x="-1184.9399999999998" y="2308" as="geometry" />
+        <mxCell id="G8DehN8Xk7uLqqQ89Hug-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;確認參數&lt;/span&gt;&lt;/div&gt;&lt;span style=&quot;text-align: left;&quot;&gt;畫面代入&quot;生產開始設定值&quot;，並以紅字顯示與資料來源對照差異&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;&lt;div&gt;如果RMS沒有標準值 ，則把目前的也設定為標準值&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;，要求主管簽名，儲存。&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;RMS會對照標準值，日後主管沒有簽名的參數，RMS會視為沒有設定，&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;不卡控，但&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;會每模次全發警報&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="118" width="357.93" x="-1192.47" y="2311" as="geometry" />
         </mxCell>
         <mxCell id="G8DehN8Xk7uLqqQ89Hug-29" edge="1" parent="1" source="G8DehN8Xk7uLqqQ89Hug-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="Nxlct3h7_9rXwwGu6eUJ-20">
           <mxGeometry relative="1" as="geometry">
@@ -296,7 +296,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="G8DehN8Xk7uLqqQ89Hug-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="工單完工&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;(取得PMC最後參數值&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;存入RMS&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 11px; text-wrap-mode: nowrap;&quot;&gt;但標記為&quot;生產結束設定值&quot;)&lt;br&gt;&lt;br&gt;(取得&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;方式為排程去掃工單為&quot;C&quot;的&quot;P&quot;確認完工，&lt;br&gt;然後取PMC該工單最後一筆)&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="110" width="237.5" x="-1131.75" y="2486" as="geometry" />
+          <mxGeometry height="110" width="237.5" x="-1132.75" y="2514.75" as="geometry" />
         </mxCell>
         <mxCell id="G8DehN8Xk7uLqqQ89Hug-34" edge="1" parent="1" source="Nxlct3h7_9rXwwGu6eUJ-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="ssrlN1PxepoFyEIOFFqK-1">
           <mxGeometry relative="1" as="geometry">
@@ -403,7 +403,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="Nxlct3h7_9rXwwGu6eUJ-66" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="生產" vertex="1">
-          <mxGeometry height="30" width="120" x="-1073" y="2426" as="geometry" />
+          <mxGeometry height="30" width="120" x="-1074" y="2454.75" as="geometry" />
         </mxCell>
         <mxCell id="Nxlct3h7_9rXwwGu6eUJ-84" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;" value="&lt;div&gt;每次試模記錄歷史設定值&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;RMS也用截取功能&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;取得PMC最後參數值&lt;/div&gt;&lt;div&gt;代入系統畫面&lt;/div&gt;&lt;div&gt;version1&lt;/div&gt;&lt;div&gt;version2&lt;/div&gt;&lt;div&gt;...&lt;/div&gt;&lt;div&gt;理論上試模幾次就有幾次的參數&lt;/div&gt;&lt;div&gt;看是不是要選填記錄缺陷&lt;/div&gt;" vertex="1">
           <mxGeometry height="178" width="182" x="-1546" y="1393.5" as="geometry" />
@@ -426,8 +426,16 @@
         <mxCell id="yMtUROOKJK6XE_GCZewr-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="試模、再調整介面參數" vertex="1">
           <mxGeometry height="47" width="208" x="-1129" y="1771" as="geometry" />
         </mxCell>
+        <mxCell id="yMtUROOKJK6XE_GCZewr-59" edge="1" parent="1" source="yMtUROOKJK6XE_GCZewr-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="yMtUROOKJK6XE_GCZewr-14">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-1331" y="2470" />
+              <mxPoint x="-1331" y="1794" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
         <mxCell id="yMtUROOKJK6XE_GCZewr-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="機台異常，生產異常" vertex="1">
-          <mxGeometry height="41.5" width="167" x="-1279" y="2420.25" as="geometry" />
+          <mxGeometry height="41.5" width="167" x="-1280" y="2449" as="geometry" />
         </mxCell>
         <mxCell id="yMtUROOKJK6XE_GCZewr-41" edge="1" parent="1" source="yMtUROOKJK6XE_GCZewr-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="yMtUROOKJK6XE_GCZewr-40" value="">
           <mxGeometry relative="1" as="geometry" />
@@ -439,7 +447,8 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="-767" y="1960" />
-              <mxPoint x="-767" y="2441" />
+              <mxPoint x="-767" y="2470" />
+              <mxPoint x="-954" y="2470" />
             </Array>
           </mxGeometry>
         </mxCell>
