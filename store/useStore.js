@@ -125,7 +125,7 @@ export const useStore = create(
             const { isSignedIn, progress, notes, settings, isOffline } = get();
             console.log('[Sync] 1. 登入狀態:', isSignedIn);
             if (!isSignedIn) {
-              console.log('[Sync] ❌ 未登入，跳過同步');
+              console.log('[Sync]  未登入，跳過同步');
               return;
             }
 
@@ -181,7 +181,7 @@ export const useStore = create(
               console.log('[Sync] 5. 等待 Google API 就緒（5秒）...');
               try {
                 await waitForGoogleApiReady(5000);
-                console.log('[Sync] ✅ Google API 已就緒');
+                console.log('[Sync]  Google API 已就緒');
               } catch {
                 console.warn('[Sync] Google API 未就緒，將資料加入離線佇列');
                 const { queueSync, getPendingCount } = await import('@/lib/offlineSync');
@@ -194,22 +194,22 @@ export const useStore = create(
 
               console.log('[Sync] 6. 開始儲存到 Google Drive...');
               await saveData(syncData);
-              console.log('[Sync] ✅ 儲存成功');
+              console.log('[Sync]  儲存成功');
               clearTimeout(timeoutId);
               set({
                 lastSyncTime: new Date().toISOString(),
                 syncError: null,
                 pendingSyncCount: 0,
-                isSyncing: false, // ✅ 立即重置，不要等 clearPending
+                isSyncing: false, //  立即重置，不要等 clearPending
               });
 
               // 成功後清空離線佇列（背景執行，不阻塞）
               console.log('[Sync] 7. 清空離線佇列（背景執行）...');
               import('@/lib/offlineSync').then(({ clearPending }) => {
                 clearPending().then(() => {
-                  console.log('[Sync] ✅ 離線佇列已清空');
+                  console.log('[Sync]  離線佇列已清空');
                 }).catch((error) => {
-                  console.log('[Sync] ⚠️ 清空離線佇列失敗:', error.message);
+                  console.log('[Sync]  清空離線佇列失敗:', error.message);
                 });
               });
             } catch (error) {

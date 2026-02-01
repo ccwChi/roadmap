@@ -59,7 +59,7 @@ export const aiAgentsRoadmap = {
                 "subtitle": "Model Families & Pricing",
                 "category": "core",
                 "description": "認識不同模型類型與成本",
-                "content": "**開源模型 (Open Weight)**\n- Llama 3.2 (3B-70B): Meta 出品，平衡\n- Mistral-Nemo (12B): 多語言、程式碼強\n- Phi-3 (3.8B): Microsoft，速度快\n- ⚠️ Qwen (7B-72B): 中文強但有政治審查\n\n**商業模型 (Closed Weight)**\n- GPT-4: $5/$15 per 1M tokens\n- Claude 3.5: $3/$15 per 1M tokens\n- Gemini 1.5: $1.25/$5 per 1M tokens\n\n**Reasoning vs Standard**\n- o1 系列: 深度推理，慢但準\n- GPT-4: 快速回應，通用\n\n**選擇原則**\n- 內網部署 → 開源模型 (Ollama)\n- 高品質需求 → GPT-4/Claude\n- 成本敏感 → Gemini/開源\n\n**Fine-tuning vs Prompt Engineering**\n- Prompt: 0 成本，1 天\n- LoRA 微調: 0 成本 (Colab)，1 週\n- Full Fine-tuning: $100+，1 個月\n\n**學習時間**: 2-3 天",
+                "content": "**開源模型 (Open Weight)**\n- Llama 3.2 (3B-70B): Meta 出品，平衡\n- Mistral-Nemo (12B): 多語言、程式碼強\n- Phi-3 (3.8B): Microsoft，速度快\n-  Qwen (7B-72B): 中文強但有政治審查\n\n**商業模型 (Closed Weight)**\n- GPT-4: $5/$15 per 1M tokens\n- Claude 3.5: $3/$15 per 1M tokens\n- Gemini 1.5: $1.25/$5 per 1M tokens\n\n**Reasoning vs Standard**\n- o1 系列: 深度推理，慢但準\n- GPT-4: 快速回應，通用\n\n**選擇原則**\n- 內網部署 → 開源模型 (Ollama)\n- 高品質需求 → GPT-4/Claude\n- 成本敏感 → Gemini/開源\n\n**Fine-tuning vs Prompt Engineering**\n- Prompt: 0 成本，1 天\n- LoRA 微調: 0 成本 (Colab)，1 週\n- Full Fine-tuning: $100+，1 個月\n\n**學習時間**: 2-3 天",
                 "resources": [
                     { "title": "OpenRouter 價格比較", "url": "https://openrouter.ai/models" },
                     { "title": "Hugging Face 模型庫", "url": "https://huggingface.co/models" }
@@ -75,7 +75,7 @@ export const aiAgentsRoadmap = {
                 "subtitle": "RAG Basics",
                 "category": "core",
                 "description": "檢索增強生成基礎",
-                "content": "**為什麼需要 RAG？**\n\nLLM 的限制:\n- ❌ 不知道公司內部文件\n- ❌ 不知道最新資訊\n- ❌ 無法客製化知識\n\n**RAG 完整流程**\n``````\n\n**核心組件**\n\n**Embeddings (向量嵌入)**\n- 將文字轉為數學向量\n- OpenAI: text-embedding-3-small (1536維)\n- 開源: sentence-transformers\n\n**Vector Databases**\n- Chroma: 個人學習，零配置\n- Qdrant: 內網部署，高效能\n- Pinecone: 雲端，免維護\n- Milvus: 企業級，億級資料\n\n**Chunking (文本切割)**\n- 固定長度: 500 字 + 50 字重疊\n- 語義切割: 按段落/句號切\n- 推薦: RecursiveCharacterTextSplitter\n\n**Retrieval Methods**\n- Dense Search: 向量相似度\n- Sparse Search: 關鍵字匹配\n- Hybrid: 結合兩者\n\n**30 分鐘實作 RAG**\n``````\n\n**學習時間**: 1 週",
+                "content": "**為什麼需要 RAG？**\n\nLLM 的限制:\n-  不知道公司內部文件\n-  不知道最新資訊\n-  無法客製化知識\n\n**RAG 完整流程**\n``````\n\n**核心組件**\n\n**Embeddings (向量嵌入)**\n- 將文字轉為數學向量\n- OpenAI: text-embedding-3-small (1536維)\n- 開源: sentence-transformers\n\n**Vector Databases**\n- Chroma: 個人學習，零配置\n- Qdrant: 內網部署，高效能\n- Pinecone: 雲端，免維護\n- Milvus: 企業級，億級資料\n\n**Chunking (文本切割)**\n- 固定長度: 500 字 + 50 字重疊\n- 語義切割: 按段落/句號切\n- 推薦: RecursiveCharacterTextSplitter\n\n**Retrieval Methods**\n- Dense Search: 向量相似度\n- Sparse Search: 關鍵字匹配\n- Hybrid: 結合兩者\n\n**30 分鐘實作 RAG**\n``````\n\n**學習時間**: 1 週",
                 "resources": [
                     { "title": "Chroma 文件", "url": "https://docs.trychroma.com/" },
                     { "title": "Qdrant 快速開始", "url": "https://qdrant.tech/documentation/quick-start/" }
@@ -134,7 +134,7 @@ export const aiAgentsRoadmap = {
                 "subtitle": "Prompt Engineering",
                 "category": "skill",
                 "description": "撰寫有效 Prompt 的技巧",
-                "content": "**核心原則**\n\n**1. Be Specific (明確)**\n❌ \"介紹 AI\"\n✅ \"用 300 字介紹 AI Agents，包含定義、能力、案例，目標讀者: C# 工程師\"\n\n**2. Provide Context (上下文)**\n``````\n\n**3. Use Examples (Few-shot)**\n``````\n\n**4. Specify Format (指定格式)**\n``````\n\n**進階技巧**\n\n**Chain of Thought (CoT)**\n``````\n\n**專屬模板庫**\n\n**C# 程式碼生成**\n``````csharp ... ``````\n\n**PPT 生成**\n``````\n\n**學習時間**: 1-2 週持續優化",
+                "content": "**核心原則**\n\n**1. Be Specific (明確)**\n \"介紹 AI\"\n \"用 300 字介紹 AI Agents，包含定義、能力、案例，目標讀者: C# 工程師\"\n\n**2. Provide Context (上下文)**\n``````\n\n**3. Use Examples (Few-shot)**\n``````\n\n**4. Specify Format (指定格式)**\n``````\n\n**進階技巧**\n\n**Chain of Thought (CoT)**\n``````\n\n**專屬模板庫**\n\n**C# 程式碼生成**\n``````csharp ... ``````\n\n**PPT 生成**\n``````\n\n**學習時間**: 1-2 週持續優化",
                 "resources": [
                     { "title": "Prompt Engineering Roadmap", "url": "https://roadmap.sh/prompt-engineering" },
                     { "title": "OpenAI Prompt Guide", "url": "https://platform.openai.com/docs/guides/prompt-engineering" }
@@ -209,7 +209,7 @@ export const aiAgentsRoadmap = {
                 "subtitle": "LLM Native Function Calling",
                 "category": "advanced",
                 "description": "使用 LLM 內建工具功能",
-                "content": "**OpenAI Function Calling**\n``````\n\n**Anthropic Tool Use (Claude)**\n``````\n\n**Gemini Function Calling**\n``````\n\n**OpenAI Assistant API**\n``````\n\n**優點**\n- ✅ LLM 原生支援，更穩定\n- ✅ 無需自己解析輸出\n- ✅ 錯誤處理完善\n\n**缺點**\n- ❌ 綁定特定平台\n- ❌ 成本較高\n- ❌ 本地模型不支援\n\n**學習時間**: 1 週",
+                "content": "**OpenAI Function Calling**\n``````\n\n**Anthropic Tool Use (Claude)**\n``````\n\n**Gemini Function Calling**\n``````\n\n**OpenAI Assistant API**\n``````\n\n**優點**\n-  LLM 原生支援，更穩定\n-  無需自己解析輸出\n-  錯誤處理完善\n\n**缺點**\n-  綁定特定平台\n-  成本較高\n-  本地模型不支援\n\n**學習時間**: 1 週",
                 "resources": [
                     { "title": "OpenAI Function Calling", "url": "https://platform.openai.com/docs/guides/function-calling" },
                     { "title": "Anthropic Tool Use", "url": "https://docs.anthropic.com/claude/docs/tool-use" }

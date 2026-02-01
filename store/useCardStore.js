@@ -22,7 +22,7 @@ const validateCard = (card) => {
             z: card.position?.z ?? 0
         },
         links: Array.isArray(card.links) ? card.links : [],
-        projectId: card.projectId || 'default', // ✅ 確保每張卡片都有專案歸屬
+        projectId: card.projectId || 'default', //  確保每張卡片都有專案歸屬
         createdAt: card.createdAt || new Date().toISOString(),
         updatedAt: card.updatedAt || new Date().toISOString()
     };
@@ -489,11 +489,11 @@ export const useCardStore = create(
                             const { useStore } = await import('@/store/useStore');
                             const isSignedIn = useStore.getState().isSignedIn;
                             if (!isSignedIn) {
-                                console.log('[CardSync] ❌ 未登入，跳過同步');
+                                console.log('[CardSync]  未登入，跳過同步');
                                 return;
                             }
                         } catch (e) {
-                            console.log('[CardSync] ❌ 檢查登入狀態失敗');
+                            console.log('[CardSync]  檢查登入狀態失敗');
                             return;
                         }
 
@@ -521,7 +521,7 @@ export const useCardStore = create(
 
                                 // 只有在「時間戳不同」且「不是我自己修改的」才視為衝突
                                 if (cloudTime !== lastSyncedTime && cloudModifierId !== deviceId) {
-                                    console.warn('[CardSync] ⚠️ 偵測到其他裝置已修改雲端資料，停止同步');
+                                    console.warn('[CardSync]  偵測到其他裝置已修改雲端資料，停止同步');
                                     set({
                                         isSyncing: false,
                                         syncConflict: {
@@ -548,9 +548,9 @@ export const useCardStore = create(
                                 const success = await saveCardsMetadata(cards, get().deviceId);
                                 if (success) {
                                     metadataSynced = true;
-                                    console.log('[CardSync] ✅ 元資料同步成功');
+                                    console.log('[CardSync]  元資料同步成功');
                                 } else {
-                                    console.error('[CardSync] ❌ 元資料同步失敗');
+                                    console.error('[CardSync]  元資料同步失敗');
                                 }
                             }
 
@@ -575,7 +575,7 @@ export const useCardStore = create(
                                     }
                                 });
 
-                                console.log(`[CardSync] ✅ ${contentSyncedIds.length}/${contentDirtyIds.length} 個內容同步成功`);
+                                console.log(`[CardSync]  ${contentSyncedIds.length}/${contentDirtyIds.length} 個內容同步成功`);
                             }
 
                             // 3. 清除 Dirty Flags
@@ -588,7 +588,7 @@ export const useCardStore = create(
 
                             console.log('[CardSync] 🎉 差異同步完成');
                         } catch (error) {
-                            console.error('[CardSync] ❌ 同步失敗:', error.message || error);
+                            console.error('[CardSync]  同步失敗:', error.message || error);
                         } finally {
                             set({ isSyncing: false });
                             console.log('[CardSync] === 同步結束 ===\n');

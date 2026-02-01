@@ -33,7 +33,7 @@ export default function CardsPage() {
                         toast.error('無法同步', {
                             description: '請先登入 Google 帳號才能同步到雲端。您可以改用「匯出資料」功能來備份。'
                         });
-                        console.log('[Ctrl+S] ⚠️ 未登入，無法同步');
+                        console.log('[Ctrl+S]  未登入，無法同步');
                         return;
                     }
 
@@ -46,17 +46,17 @@ export default function CardsPage() {
                         toast.error('同步失敗', {
                             description: 'Google 登入已過期，請點擊右上角重新登入。'
                         });
-                        console.log('[Ctrl+S] ⚠️ Token 已過期');
+                        console.log('[Ctrl+S]  Token 已過期');
                         return;
                     }
 
                     // 手動觸發上傳到雲端
-                    console.log('[Ctrl+S] 🔄 開始手動同步...');
+                    console.log('[Ctrl+S]  開始手動同步...');
                     const { forceUploadToCloud } = useCardStore.getState();
                     const { toast } = await import('sonner');
 
                     await forceUploadToCloud();
-                    console.log('[Ctrl+S] ✅ 手動同步完成');
+                    console.log('[Ctrl+S]  手動同步完成');
 
                     // 使用 Sonner toast 顯示成功提示
                     toast.success('已同步到雲端', {
@@ -64,7 +64,7 @@ export default function CardsPage() {
                     });
 
                 } catch (err) {
-                    console.error('[Ctrl+S] ❌ 手動同步失敗:', err);
+                    console.error('[Ctrl+S]  手動同步失敗:', err);
                     const { toast } = await import('sonner');
 
                     // 友好的錯誤提示

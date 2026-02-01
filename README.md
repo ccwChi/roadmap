@@ -22,27 +22,3 @@ GOOGLE_API_KEY	你的 Google API Key
 手動觸發（到 Actions → Deploy to GitHub Pages → Run workflow）
 部署後的網址
 https://ccwChi.github.io/roadmap/
-
-本地測試 Production Build
-# 模擬 GitHub Pages 環境
-GITHUB_PAGES=true npm run build
-
-# 本地預覽（需要安裝 serve）
-npx serve out
-
-重要設定說明
-你的 next.config.mjs 已經正確設定：
-
-const isGitHubPages = process.env.GITHUB_PAGES === 'true';
-const repoName = '/roadmap';
-
-// 部署到 GitHub Pages 時會自動設定 basePath
-basePath: isGitHubPages ? repoName : '',
-assetPrefix: isGitHubPages ? repoName : '',
-
-這確保所有資源路徑在 username.github.io/roadmap/ 下正確運作。
-
-PWA 在 GitHub Pages 上的注意事項
-HTTPS - GitHub Pages 自動提供 HTTPS，PWA 需要 HTTPS 才能運作
-Service Worker - 會在 build 時自動生成到 /out 目錄
-manifest.json - 已設定正確的路徑

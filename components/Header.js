@@ -193,13 +193,13 @@ export default function Header() {
       const { refreshAccessToken } = await import('@/lib/googleDrive');
 
       await refreshAccessToken();
-      console.log('[Header] ✅ Token 手動刷新成功');
+      console.log('[Header]  Token 手動刷新成功');
 
       toast.success('登入已更新', {
         description: 'Google 登入狀態已刷新'
       });
     } catch (error) {
-      console.error('[Header] ❌ Token 刷新失敗:', error);
+      console.error('[Header]  Token 刷新失敗:', error);
       toast.error('登入更新失敗', {
         description: '請點擊右上角重新登入'
       });
